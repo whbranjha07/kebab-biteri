@@ -79,20 +79,25 @@ async function main() {
   const Promotion = mongoose.model('Promotion', PromotionSchema)
   const Coupon = mongoose.model('Coupon', CouponSchema)
 
-  // Clear existing data
+  // Clear existing data & indexes
+  await User.collection.dropIndexes().catch(() => {})
   await Promise.all([
     User.deleteMany({}), Category.deleteMany({}), Branch.deleteMany({}),
     Product.deleteMany({}), Promotion.deleteMany({}), Coupon.deleteMany({}),
   ])
-  console.log('Cleared existing data')
+  console.log('Cleared existing data & indexes')
 
   // ─── Admin user ─────────────────────────────────
-  const adminPassword = await bcrypt.hash('admin123', 10)
+  const adminPassword = await bcrypt.hash('kababbiteri123', 10)
   await User.create({
-    email: 'admin@kebabbiteri.com', firstName: 'Admin', lastName: 'Biteri',
+    email: 'admin@kebabbiteri.com', username: 'admin_kebabbiteri', firstName: 'Admin', lastName: 'Biteri',
     role: 'ADMIN', passwordHash: adminPassword,
   })
-  console.log('✓ Admin user created')
+  await User.create({
+    email: 'admin@kababbiteri.com', username: 'admin_kababbiteri', firstName: 'Admin', lastName: 'Biteri',
+    role: 'ADMIN', passwordHash: adminPassword,
+  })
+  console.log('✓ Admin user created with password: kababbiteri123')
 
   // ─── Branch ─────────────────────────────────────
   const branch = await Branch.create({
@@ -249,7 +254,7 @@ async function main() {
   console.log('✓ Coupon created')
 
   console.log('\n✅ Seed complete!')
-  console.log('   Admin login: admin@kebabbiteri.com / admin123')
+  console.log('   Admin login: admin@kebabbiteri.com (or admin@kababbiteri.com) / kababbiteri123')
   console.log(`   Database: ${DB_URL}`)
 
   await mongoose.disconnect()
