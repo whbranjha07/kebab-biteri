@@ -31,17 +31,34 @@ export function DesktopHeader() {
     <>
       <header className="hidden lg:flex sticky top-0 z-30 items-center justify-between bg-white/95 px-8 py-3.5 backdrop-blur-md border-b border-amber-200 shadow-xs">
         {/* Search Input */}
-        <div className="relative w-96">
+        <form
+          onSubmit={(e) => {
+            e.preventDefault()
+            handleSearch()
+          }}
+          className="relative w-96"
+        >
           <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400" />
           <input
             type="search"
             placeholder={t('home.searchPlaceholder')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-            className="h-10 w-full rounded-2xl border border-amber-200 bg-amber-50/40 pl-10 pr-4 text-xs font-semibold text-zinc-950 placeholder:text-zinc-400 focus:border-[#F4BE2C] focus:outline-none focus:ring-2 focus:ring-[#F4BE2C]/40 shadow-2xs"
+            className="h-10 w-full rounded-2xl border border-amber-200 bg-amber-50/40 pl-10 pr-8 text-xs font-semibold text-zinc-950 placeholder:text-zinc-400 focus:border-[#F4BE2C] focus:outline-none focus:ring-2 focus:ring-[#F4BE2C]/40 shadow-2xs"
           />
-        </div>
+          {query && (
+            <button
+              type="button"
+              onClick={() => {
+                setQuery('')
+                router.push('/menu')
+              }}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-900"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </form>
 
         {/* Center Location / Pickup Location Button */}
         <button

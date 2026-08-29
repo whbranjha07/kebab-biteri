@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Search, Star, Plus, ChevronLeft, Sparkles, X } from 'lucide-react'
@@ -31,21 +31,38 @@ export function MenuClient({ initialCategory, initialQuery }: MenuClientProps) {
   const [isAdding, setIsAdding] = useState(false)
   const [addMode, setAddMode] = useState<'product' | 'offer'>('product')
 
+  // Keep query in sync with URL search params
+  useEffect(() => {
+    setQuery(initialQuery)
+  }, [initialQuery])
+
+  useEffect(() => {
+    setActiveCat(initialCategory)
+  }, [initialCategory])
+
   const categories = data?.categories ?? []
   const products = (data?.products ?? []) as Array<Product & { isNew?: boolean; number?: number; priceUnit?: string }>
 
   const allProducts = useMemo(() => [...customProducts, ...products], [customProducts, products])
 
   const filtered = useMemo(() => {
+    const qTrim = query.trim().toLowerCase()
     return allProducts.filter((p) => {
-      const catMatch = activeCat === 'all' || p.categoryId === activeCat
-      const queryMatch =
-        !query ||
-        p.name.toLowerCase().includes(query.toLowerCase()) ||
-        p.description?.toLowerCase().includes(query.toLowerCase())
+      // When user is searching, search across all categories unless specific category is active without search
+      const catMatch = !qTrim || activeCat === 'all' || p.categoryId === activeCat
+      
+      const catObj = categories.find((c) => c.id === p.categoryId)
+      const catNameMatch = catObj?.name.toLowerCase().includes(qTrim)
+
+      const nameMatch = p.name.toLowerCase().includes(qTrim)
+      const descMatch = p.description?.toLowerCase().includes(qTrim)
+      const numMatch = p.number ? String(p.number) === qTrim : false
+
+      const queryMatch = !qTrim || nameMatch || descMatch || catNameMatch || numMatch
+
       return catMatch && queryMatch
     })
-  }, [allProducts, activeCat, query])
+  }, [allProducts, activeCat, query, categories])
 
   const addItem = useCartStore((s) => s.addItem)
 
@@ -116,7 +133,7 @@ export function MenuClient({ initialCategory, initialQuery }: MenuClientProps) {
           </div>
         </div>
         {/* Search */}
-        <div className="relative mt-3 lg:hidden">
+        <div className="relative mt-3">
           <Search className="absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-zinc-400" />
           <input
             type="search"
@@ -124,9 +141,31 @@ export function MenuClient({ initialCategory, initialQuery }: MenuClientProps) {
             placeholder={t('home.searchPlaceholder')}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="h-11 w-full rounded-2xl border border-amber-200 bg-white pl-11 pr-4 text-sm font-semibold text-zinc-900 placeholder:text-zinc-400 focus:border-[#F4BE2C] focus:outline-none focus:ring-2 focus:ring-[#F4BE2C]/40 shadow-sm"
+            className="h-11 w-full rounded-2xl border border-amber-200 bg-white pl-11 pr-10 text-sm font-semibold text-zinc-900 placeholder:text-zinc-400 focus:border-[#F4BE2C] focus:outline-none focus:ring-2 focus:ring-[#F4BE2C]/40 shadow-sm"
           />
+          {query && (
+            <button
+              onClick={() => setQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 text-zinc-600 hover:text-zinc-950"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
         </div>
+
+        {query.trim() && (
+          <div className="mt-2 flex items-center justify-between rounded-xl bg-amber-100/70 px-3.5 py-1.5 border border-amber-300 text-xs">
+            <span className="font-bold text-zinc-950">
+              {filtered.length} {filtered.length === 1 ? 'item' : 'items'} found for "{query.trim()}"
+            </span>
+            <button
+              onClick={() => setQuery('')}
+              className="font-black text-[#E50909] hover:underline"
+            >
+              Clear Search
+            </button>
+          </div>
+        )}
         {/* Category tabs */}
         <div className="no-scrollbar -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 py-1">
           <button
