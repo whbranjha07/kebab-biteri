@@ -1,6 +1,6 @@
 'use client'
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://kebab-biteri-api.vercel.app'
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://kebab-biteri-api-alpha.vercel.app'
 
 // Token storage — localStorage for PWA
 let accessToken: string | null = null

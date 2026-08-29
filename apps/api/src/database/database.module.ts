@@ -15,7 +15,7 @@ import {
 const DB_URL =
   process.env.MONGODB_URI ||
   process.env.DATABASE_URL ||
-  'mongodb://localhost:27017/kebab-biteri'
+  'mongodb+srv://Vercel-Admin-atlas-cobalt-book:atJv8Vb9EtQ93072@atlas-cobalt-book.ml4demu.mongodb.net/?retryWrites=true&w=majority'
 
 @Module({
   imports: [
