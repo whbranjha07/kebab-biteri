@@ -1,6 +1,18 @@
 'use client'
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://kebab-biteri-api-alpha.vercel.app'
+export function getApiBase(): string {
+  let base = process.env.NEXT_PUBLIC_API_URL || ''
+  if (!base) {
+    if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+      base = 'http://localhost:3001/api'
+    } else {
+      base = 'https://kebab-biteri-api-alpha.vercel.app/api'
+    }
+  }
+  // Ensure base ends with /api
+  const cleaned = base.replace(/\/+$/, '')
+  return cleaned.endsWith('/api') ? cleaned : `${cleaned}/api`
+}
 
 // Token storage — localStorage for PWA
 let accessToken: string | null = null
@@ -46,13 +58,15 @@ async function request<T>(
     if (token) headers['Authorization'] = `Bearer ${token}`
   }
 
-  // Add timeout via AbortController — default 10 seconds
   const timeoutMs = options?.timeout ?? 10000
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
+  const apiBase = getApiBase()
+  const cleanPath = path.startsWith('/') ? path : `/${path}`
+
   try {
-    const res = await fetch(`${API_BASE}${path}`, {
+    const res = await fetch(`${apiBase}${cleanPath}`, {
       ...options,
       headers,
       signal: controller.signal,
@@ -66,7 +80,10 @@ async function request<T>(
     return res.status === 204 ? (undefined as T) : res.json()
   } catch (err: any) {
     if (err.name === 'AbortError') {
-      throw new ApiError('Request timed out. Please try again.', 408)
+      throw new ApiError('Conexión con el servidor superada por tiempo. / Server request timed out.', 408)
+    }
+    if (err.message === 'Failed to fetch' || err instanceof TypeError) {
+      throw new ApiError('No se pudo conectar con el servidor API. Por favor comprueba que el servidor backend esté activo. / Could not connect to API backend.', 503)
     }
     throw err
   } finally {
