@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ChevronLeft, Check, Clock, Truck, Package, Home, AlertCircle, Store, MapPin, Phone, LogIn } from 'lucide-react'
@@ -27,19 +28,16 @@ export default function OrderDetailPage() {
   const router = useRouter()
   const { order, loading, error } = useOrder(params.id)
   const addItem = useCartStore((s) => s.addItem)
-  const isLoggedIn = typeof window !== 'undefined' && getAccessToken()
 
-  if (!isLoggedIn) {
-    return (
-      <div className="flex min-h-dvh flex-col items-center justify-center px-6 text-center">
-        <LogIn className="h-12 w-12 text-subtle" />
-        <p className="mt-4 text-lg font-semibold text-charcoal">Login required</p>
-        <Link href="/profile/login" className="mt-4"><Button>Log in</Button></Link>
-      </div>
-    )
-  }
+  const [mounted, setMounted] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
 
-  if (loading) {
+  useEffect(() => {
+    setMounted(true)
+    setIsLoggedIn(!!getAccessToken())
+  }, [])
+
+  if (!mounted || loading) {
     return (
       <div className="flex min-h-dvh flex-col">
         <header className="safe-top sticky top-0 z-20 bg-surface/95 px-4 pb-3 pt-3 backdrop-blur-lg">
@@ -52,6 +50,26 @@ export default function OrderDetailPage() {
         </header>
         <div className="flex flex-1 items-center justify-center">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        </div>
+      </div>
+    )
+  }
+
+  if (!isLoggedIn) {
+    return (
+      <div className="flex min-h-dvh flex-col">
+        <header className="safe-top sticky top-0 z-20 bg-surface/95 px-4 pb-3 pt-3 backdrop-blur-lg">
+          <div className="flex items-center gap-3">
+            <Link href="/orders" className="touch-target -ml-2 flex items-center justify-center rounded-full">
+              <ChevronLeft className="h-6 w-6 text-charcoal" />
+            </Link>
+            <h1 className="font-display text-xl font-extrabold text-charcoal">Order</h1>
+          </div>
+        </header>
+        <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
+          <LogIn className="h-12 w-12 text-subtle" />
+          <p className="mt-4 text-lg font-semibold text-charcoal">Login required</p>
+          <Link href="/profile/login" className="mt-4"><Button>Log in</Button></Link>
         </div>
       </div>
     )

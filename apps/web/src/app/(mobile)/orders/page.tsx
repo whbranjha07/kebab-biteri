@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { ChevronLeft, Package, Clock, CheckCircle2, Truck, AlertCircle, Store, LogIn } from 'lucide-react'
 import { formatPrice, timeAgo, cn } from '@/lib/utils'
@@ -12,7 +13,13 @@ import { LanguageSwitcher } from '@/components/language-switcher'
 export default function OrdersPage() {
   const { orders, loading, error } = useOrders()
   const { t } = useI18n()
-  const isLoggedIn = typeof window !== 'undefined' && getAccessToken()
+  const [mounted, setMounted] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+    setIsLoggedIn(!!getAccessToken())
+  }, [])
 
   const statusConfig: Record<string, { labelKey: string; icon: typeof Clock; color: string }> = {
     PENDING: { labelKey: 'orders.pending', icon: Clock, color: 'text-amber-700' },
@@ -22,6 +29,27 @@ export default function OrdersPage() {
     OUT_FOR_DELIVERY: { labelKey: 'orders.outForDelivery', icon: Truck, color: 'text-blue-700' },
     DELIVERED: { labelKey: 'orders.delivered', icon: CheckCircle2, color: 'text-emerald-700' },
     CANCELLED: { labelKey: 'orders.cancelled', icon: AlertCircle, color: 'text-[#E50909]' },
+  }
+
+  if (!mounted || (loading && !isLoggedIn)) {
+    return (
+      <div className="flex min-h-dvh flex-col">
+        <header className="safe-top sticky top-0 lg:top-[65px] z-20 bg-white/95 px-4 pb-3 pt-3 backdrop-blur-lg border-b border-amber-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Link href="/" className="touch-target -ml-2 flex items-center justify-center rounded-full">
+                <ChevronLeft className="h-6 w-6 text-zinc-950" />
+              </Link>
+              <h1 className="font-sans text-xl font-black text-zinc-950">{t('orders.title')}</h1>
+            </div>
+            <LanguageSwitcher />
+          </div>
+        </header>
+        <div className="flex justify-center py-20 flex-1">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-[#F4BE2C] border-t-transparent" />
+        </div>
+      </div>
+    )
   }
 
   if (!isLoggedIn) {
