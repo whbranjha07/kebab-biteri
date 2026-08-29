@@ -68,7 +68,10 @@ export function DesktopSidebar() {
       </nav>
 
       {/* Special Offer Badge */}
-      <div className="my-4 rounded-2xl bg-gradient-to-br from-[#FFFDF0] to-[#FFF9D6] p-4 border border-amber-300 shadow-2xs">
+      <Link
+        href="/special-offers"
+        className="my-4 block rounded-2xl bg-gradient-to-br from-[#FFFDF0] to-[#FFF9D6] p-4 border border-amber-300 shadow-2xs hover:border-[#F4BE2C] hover:scale-[1.02] active:scale-95 transition-all"
+      >
         <div className="flex items-center gap-2 text-xs font-black text-[#D99F16]">
           <Flame className="h-4 w-4 text-[#E50909]" />
           <span>{t('home.heroBadge')}</span>
@@ -76,7 +79,7 @@ export function DesktopSidebar() {
         <p className="mt-1 text-xs font-semibold text-zinc-700 leading-snug">
           {t('home.heroDesc')}
         </p>
-      </div>
+      </Link>
 
       {/* Footer / Language Switcher */}
       <div className="pt-4 border-t border-amber-100 flex items-center justify-between">

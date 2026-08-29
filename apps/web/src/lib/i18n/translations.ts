@@ -135,6 +135,18 @@ export const translations = {
     'profile.help': 'Ayuda y Soporte',
     'profile.logout': 'Cerrar sesión',
 
+    // Addresses
+    'addresses.empty': 'No tienes direcciones guardadas',
+    'addresses.emptyDesc': 'Añade tu dirección para agilizar tus pedidos a domicilio',
+    'addresses.created': '¡Dirección añadida correctamente!',
+    'addresses.defaultSet': 'Establecida como dirección predeterminada',
+    'addresses.deleted': 'Dirección eliminada',
+
+    // Theme & Settings
+    'theme.title': 'Modo de Apariencia',
+    'theme.light': 'Modo Claro ☀️',
+    'theme.dark': 'Modo Oscuro 🌙',
+
     // Common
     'common.added': 'añadido al carrito',
     'common.remove': 'Eliminar',
@@ -274,6 +286,18 @@ export const translations = {
     'profile.privacy': 'Privacy & Data',
     'profile.help': 'Help & Support',
     'profile.logout': 'Log out',
+
+    // Addresses
+    'addresses.empty': 'No saved addresses yet',
+    'addresses.emptyDesc': 'Add a delivery address to complete your orders faster',
+    'addresses.created': 'Address added successfully!',
+    'addresses.defaultSet': 'Set as default delivery address',
+    'addresses.deleted': 'Address removed',
+
+    // Theme & Settings
+    'theme.title': 'Appearance Mode',
+    'theme.light': 'Light Mode ☀️',
+    'theme.dark': 'Dark Mode 🌙',
 
     // Common
     'common.added': 'added to cart',

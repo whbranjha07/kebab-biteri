@@ -125,4 +125,15 @@ export class AdminController {
   async getCustomers(@Query() query: PaginationDto) {
     return this.adminService.getCustomers(query.page, query.limit)
   }
+
+  // ─── Store Settings ───────────────────────────────
+  @Get('settings')
+  async getSettings() {
+    return this.adminService.getSettings()
+  }
+
+  @Patch('settings')
+  async updateSettings(@Body() body: Record<string, unknown>) {
+    return this.adminService.updateSettings(body)
+  }
 }

@@ -21,8 +21,8 @@ export default function ProfilePage() {
       title: t('profile.account'),
       items: [
         { icon: Package, label: t('profile.myOrders'), href: '/orders' },
-        { icon: MapPin, label: t('profile.myAddresses'), href: '/orders' },
-        { icon: Heart, label: t('profile.favorites'), href: '/menu' },
+        { icon: MapPin, label: t('profile.myAddresses'), href: '/profile/addresses' },
+        { icon: Heart, label: t('profile.favorites'), href: '/favorites' },
       ],
     },
     {

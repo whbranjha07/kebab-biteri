@@ -32,6 +32,33 @@ export class User {
   @Prop()
   fcmToken: string
 
+  @Prop({ type: [String], default: [] })
+  favorites: string[]
+
+  @Prop({
+    type: {
+      orderUpdates: { type: Boolean, default: true },
+      promotional: { type: Boolean, default: true },
+      specialOffers: { type: Boolean, default: true },
+      push: { type: Boolean, default: true },
+      email: { type: Boolean, default: true },
+    },
+    default: { orderUpdates: true, promotional: true, specialOffers: true, push: true, email: true },
+  })
+  notificationPreferences: {
+    orderUpdates: boolean
+    promotional: boolean
+    specialOffers: boolean
+    push: boolean
+    email: boolean
+  }
+
+  @Prop({ default: 'light' })
+  themePreference: string
+
+  @Prop({ default: 'es-ES' })
+  languagePreference: string
+
   @Prop({ default: true })
   isActive: boolean
 

@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common'
 import { InjectModel } from '@nestjs/mongoose'
 import { Model, Types } from 'mongoose'
-import { Order, Product, Category, Branch, Coupon, Promotion, User } from '../schemas'
+import { Order, Product, Category, Branch, Coupon, Promotion, User, StoreSettings } from '../schemas'
 import { OrdersService } from '../orders/orders.service'
 
 function slugify(text: string): string {
@@ -18,6 +18,7 @@ export class AdminService {
     @InjectModel(Coupon.name) private couponModel: Model<Coupon>,
     @InjectModel(Promotion.name) private promotionModel: Model<Promotion>,
     @InjectModel(User.name) private userModel: Model<User>,
+    @InjectModel(StoreSettings.name) private settingsModel: Model<StoreSettings>,
     private ordersService: OrdersService,
   ) {}
 
@@ -81,22 +82,71 @@ export class AdminService {
       if (to) (dateFilter.placedAt as any).$lte = new Date(to)
     }
 
-    const totalOrders = await this.orderModel.countDocuments(dateFilter)
-    const revenueResult = await this.orderModel.aggregate([
-      { $match: { ...dateFilter, status: { $nin: ['CANCELLED', 'REJECTED'] } } },
-      { $group: { _id: null, total: { $sum: '$total' } } },
+    const startOfToday = new Date()
+    startOfToday.setHours(0, 0, 0, 0)
+
+    const startOfWeek = new Date()
+    startOfWeek.setDate(startOfWeek.getDate() - 7)
+
+    const startOfMonth = new Date()
+    startOfMonth.setDate(startOfMonth.getDate() - 30)
+
+    const [
+      totalOrders,
+      revenueResult,
+      todayRevenueResult,
+      weeklyRevenueResult,
+      monthlyRevenueResult,
+      statusCounts,
+      totalCustomers,
+      topProductsAgg,
+      recentOrders,
+    ] = await Promise.all([
+      this.orderModel.countDocuments(dateFilter),
+      this.orderModel.aggregate([
+        { $match: { ...dateFilter, status: { $nin: ['CANCELLED', 'REJECTED'] } } },
+        { $group: { _id: null, total: { $sum: '$total' } } },
+      ]),
+      this.orderModel.aggregate([
+        { $match: { placedAt: { $gte: startOfToday }, status: { $nin: ['CANCELLED', 'REJECTED'] } } },
+        { $group: { _id: null, total: { $sum: '$total' } } },
+      ]),
+      this.orderModel.aggregate([
+        { $match: { placedAt: { $gte: startOfWeek }, status: { $nin: ['CANCELLED', 'REJECTED'] } } },
+        { $group: { _id: null, total: { $sum: '$total' } } },
+      ]),
+      this.orderModel.aggregate([
+        { $match: { placedAt: { $gte: startOfMonth }, status: { $nin: ['CANCELLED', 'REJECTED'] } } },
+        { $group: { _id: null, total: { $sum: '$total' } } },
+      ]),
+      this.orderModel.aggregate([
+        { $match: dateFilter },
+        { $group: { _id: '$status', count: { $sum: 1 } } },
+      ]),
+      this.userModel.countDocuments({ role: 'CUSTOMER', deletedAt: null }),
+      this.orderModel.aggregate([
+        { $unwind: '$items' },
+        { $group: { _id: '$items.productName', totalQuantity: { $sum: '$items.quantity' }, totalRevenue: { $sum: '$items.lineTotal' } } },
+        { $sort: { totalQuantity: -1 } },
+        { $limit: 10 },
+      ]),
+      this.orderModel.find().sort({ placedAt: -1 }).limit(10).lean(),
     ])
+
     const totalRevenue = revenueResult[0]?.total ?? 0
-    const statusCounts = await this.orderModel.aggregate([
-      { $match: dateFilter },
-      { $group: { _id: '$status', count: { $sum: 1 } } },
-    ])
-    const recentOrders = await this.orderModel.find().sort({ placedAt: -1 }).limit(10).lean()
-    
+    const todayRevenue = todayRevenueResult[0]?.total ?? 0
+    const weeklyRevenue = weeklyRevenueResult[0]?.total ?? 0
+    const monthlyRevenue = monthlyRevenueResult[0]?.total ?? 0
+
     return {
       totalOrders,
       totalRevenue,
+      todayRevenue,
+      weeklyRevenue,
+      monthlyRevenue,
+      totalCustomers,
       ordersByStatus: statusCounts.reduce((acc: Record<string, number>, s: any) => { acc[s._id] = s.count; return acc }, {}),
+      topProducts: topProductsAgg.map((p) => ({ name: p._id, count: p.totalQuantity, revenue: p.totalRevenue })),
       recentOrders,
     }
   }
@@ -112,5 +162,24 @@ export class AdminService {
       .lean()
     const total = await this.userModel.countDocuments({ role: 'CUSTOMER', deletedAt: null })
     return { data: users, total, page, limit, totalPages: Math.ceil(total / limit) }
+  }
+
+  async getSettings() {
+    let settings = await this.settingsModel.findOne().lean()
+    if (!settings) {
+      settings = await this.settingsModel.create({})
+    }
+    return settings
+  }
+
+  async updateSettings(body: Record<string, unknown>) {
+    let settings = await this.settingsModel.findOne()
+    if (!settings) {
+      settings = await this.settingsModel.create(body)
+    } else {
+      Object.assign(settings, body)
+      await settings.save()
+    }
+    return settings
   }
 }
