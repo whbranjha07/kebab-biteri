@@ -26,6 +26,7 @@ export default function OrderDetailPage() {
   const params = useParams<{ id: string }>()
   const router = useRouter()
   const { order, loading, error } = useOrder(params.id)
+  const addItem = useCartStore((s) => s.addItem)
   const isLoggedIn = typeof window !== 'undefined' && getAccessToken()
 
   if (!isLoggedIn) {
@@ -86,8 +87,6 @@ export default function OrderDetailPage() {
       toast.error(e.message || 'Could not cancel order')
     }
   }
-
-  const addItem = useCartStore((s) => s.addItem)
 
   const handleOrderAgain = () => {
     if (!order || !order.items) return
