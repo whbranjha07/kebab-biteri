@@ -113,10 +113,15 @@ export default function OrdersPage() {
                     <p className="text-xs font-medium text-zinc-600 line-clamp-2">{order.items.map((i) => `${i.quantity}× ${i.productName}`).join(' · ')}</p>
                     <div className="mt-2.5 flex items-center justify-between">
                       <span className="text-base font-black text-zinc-950">{formatPrice(order.total)}</span>
-                      <span className="flex items-center gap-1 text-xs font-bold text-zinc-700 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200">
-                        {order.orderType === 'DELIVERY' ? <Truck className="h-3.5 w-3.5 text-emerald-600" /> : <Store className="h-3.5 w-3.5 text-[#D99F16]" />}
-                        {order.orderType === 'DELIVERY' ? t('checkout.delivery') : t('checkout.pickup')}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="flex items-center gap-1 text-xs font-bold text-zinc-700 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200">
+                          {order.orderType === 'DELIVERY' ? <Truck className="h-3.5 w-3.5 text-emerald-600" /> : <Store className="h-3.5 w-3.5 text-[#D99F16]" />}
+                          {order.orderType === 'DELIVERY' ? t('checkout.delivery') : t('checkout.pickup')}
+                        </span>
+                        <span className="rounded-lg bg-[#F4BE2C] px-2.5 py-1 text-xs font-black text-zinc-950 shadow-2xs">
+                          View Receipt →
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </Link>

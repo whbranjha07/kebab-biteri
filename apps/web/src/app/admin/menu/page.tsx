@@ -1,8 +1,9 @@
 'use client'
 
 import { useState } from 'react'
-import { Search, X, Edit2, Star, Eye, EyeOff } from 'lucide-react'
+import { Search, X, Edit2, Star, Eye, EyeOff, Plus, Sparkles, Tag } from 'lucide-react'
 import { formatPrice, cn } from '@/lib/utils'
+import { toast } from '@/components/ui/toaster'
 import { products as initialProducts, categories, type MenuItem } from '@/data/menu-data'
 
 export default function AdminMenuPage() {
@@ -10,6 +11,8 @@ export default function AdminMenuPage() {
   const [filter, setFilter] = useState('all')
   const [query, setQuery] = useState('')
   const [editingProduct, setEditingProduct] = useState<MenuItem | null>(null)
+  const [isAddingProduct, setIsAddingProduct] = useState(false)
+  const [isSpecialOfferMode, setIsSpecialOfferMode] = useState(false)
 
   const filtered = products.filter(p => {
     const catMatch = filter === 'all' || p.categoryId === filter
@@ -20,6 +23,13 @@ export default function AdminMenuPage() {
   const handleSave = (updated: MenuItem) => {
     setProducts(prev => prev.map(p => p.id === updated.id ? updated : p))
     setEditingProduct(null)
+    toast.success('Product updated successfully')
+  }
+
+  const handleAddProduct = (newProduct: MenuItem) => {
+    setProducts(prev => [newProduct, ...prev])
+    setIsAddingProduct(false)
+    toast.success(`${newProduct.name} added to menu!`)
   }
 
   const toggleActive = (id: string) => {
@@ -36,9 +46,25 @@ export default function AdminMenuPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="font-display text-2xl font-bold text-charcoal">Menu Management</h1>
-        <p className="mt-1 text-sm text-muted">{products.length} products in {categories.length} categories</p>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="font-display text-2xl font-bold text-charcoal">Menu Management</h1>
+          <p className="mt-1 text-sm text-muted">{products.length} products in {categories.length} categories</p>
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => { setIsSpecialOfferMode(false); setIsAddingProduct(true) }}
+            className="inline-flex items-center gap-2 rounded-xl bg-[#F4BE2C] px-4 py-2.5 text-xs font-black text-zinc-950 shadow-sm hover:bg-amber-400 active:scale-95 transition-all"
+          >
+            <Plus className="h-4 w-4 stroke-[3]" /> Add New Product
+          </button>
+          <button
+            onClick={() => { setIsSpecialOfferMode(true); setIsAddingProduct(true) }}
+            className="inline-flex items-center gap-2 rounded-xl bg-[#E50909] px-4 py-2.5 text-xs font-black text-white shadow-sm hover:bg-red-700 active:scale-95 transition-all"
+          >
+            <Sparkles className="h-4 w-4" /> Add Special Offer 🔥
+          </button>
+        </div>
       </div>
 
       <div className="relative max-w-md">
@@ -93,6 +119,15 @@ export default function AdminMenuPage() {
           </div>
         ))}
       </div>
+
+      {/* Add Product / Special Offer Modal */}
+      {isAddingProduct && (
+        <AddProductModal
+          isSpecialOffer={isSpecialOfferMode}
+          onAdd={handleAddProduct}
+          onClose={() => setIsAddingProduct(false)}
+        />
+      )}
 
       {/* Edit modal */}
       {editingProduct && (
@@ -186,6 +221,201 @@ function EditProductModal({ product, onSave, onClose }: { product: MenuItem; onS
             Cancel
           </button>
         </div>
+      </div>
+    </div>
+  )
+}
+
+function AddProductModal({
+  isSpecialOffer = false,
+  onAdd,
+  onClose,
+}: {
+  isSpecialOffer?: boolean
+  onAdd: (p: MenuItem) => void
+  onClose: () => void
+}) {
+  const [form, setForm] = useState({
+    name: '',
+    categoryId: isSpecialOffer ? 'offers' : 'doner-kebab',
+    description: '',
+    imageUrl: isSpecialOffer ? '/images/menu/durum_real.jpg' : '/images/menu/kebab_pita_real.jpg',
+    basePrice: isSpecialOffer ? 14.00 : 5.00,
+    isSpecialOffer: isSpecialOffer,
+    isNew: true,
+    isPopular: false,
+    isFeatured: isSpecialOffer,
+  })
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!form.name.trim()) {
+      toast.error('Please enter a product name')
+      return
+    }
+
+    const catObj = categories.find((c) => c.id === form.categoryId)
+    const slug = form.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+    const id = `p-custom-${Date.now()}`
+
+    const newProduct: MenuItem = {
+      id,
+      name: form.name.trim(),
+      slug,
+      category: catObj?.name ?? 'Otros',
+      categoryId: form.categoryId,
+      description: form.description.trim(),
+      imageUrl: form.imageUrl.trim() || '/images/menu/kebab_pita_real.jpg',
+      basePrice: Number(form.basePrice) || 0,
+      rating: 5.0,
+      reviewCount: 1,
+      isPopular: form.isPopular,
+      isActive: true,
+      isNew: form.isNew,
+      isFeatured: form.isFeatured || form.isSpecialOffer,
+      variants: [],
+      modifiers: [],
+      allergens: ['gluten'],
+      calories: 500,
+    }
+
+    onAdd(newProduct)
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-zinc-950/60 backdrop-blur-xs" />
+      <div className="relative z-10 w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl border border-amber-200" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-start justify-between border-b border-amber-100 pb-3">
+          <div>
+            <h2 className="font-sans text-xl font-black text-zinc-950 flex items-center gap-2">
+              {form.isSpecialOffer ? <Sparkles className="h-5 w-5 text-[#E50909]" /> : <Plus className="h-5 w-5 text-[#D99F16]" />}
+              {form.isSpecialOffer ? 'Add Special Offer 🔥' : 'Add New Product'}
+            </h2>
+            <p className="text-xs font-semibold text-zinc-500">Add a new item to the customer menu</p>
+          </div>
+          <button onClick={onClose} className="touch-target flex h-8 w-8 items-center justify-center rounded-full bg-amber-50 text-zinc-600 hover:bg-amber-100">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          {/* Special Offer Toggle */}
+          <div className="rounded-2xl bg-amber-50/90 p-3.5 border border-amber-300 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-black text-zinc-950">Special Offer Option (Oferta Especial)</p>
+              <p className="text-xs text-zinc-600 font-medium">Display under Hot Deals / Special Combos</p>
+            </div>
+            <input
+              type="checkbox"
+              checked={form.isSpecialOffer}
+              onChange={(e) => setForm({ ...form, isSpecialOffer: e.target.checked, categoryId: e.target.checked ? 'offers' : form.categoryId })}
+              className="h-5 w-5 rounded border-amber-400 text-[#E50909] focus:ring-[#E50909]"
+            />
+          </div>
+
+          {/* Name */}
+          <div>
+            <label className="text-xs font-black uppercase text-zinc-950">Product Name</label>
+            <input
+              type="text"
+              required
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              placeholder={form.isSpecialOffer ? 'e.g. Combo Oferta 3 Dürüm + Bebida' : 'e.g. Kebab Supreme'}
+              className="mt-1 h-11 w-full rounded-xl border border-amber-300 bg-amber-50/30 px-3.5 text-sm font-semibold text-zinc-950 placeholder:text-zinc-400 focus:border-[#F4BE2C] focus:outline-none"
+            />
+          </div>
+
+          {/* Category */}
+          <div>
+            <label className="text-xs font-black uppercase text-zinc-950">Category</label>
+            <select
+              value={form.categoryId}
+              onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
+              className="mt-1 h-11 w-full rounded-xl border border-amber-300 bg-amber-50/30 px-3.5 text-sm font-bold text-zinc-950 focus:border-[#F4BE2C] focus:outline-none"
+            >
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="text-xs font-black uppercase text-zinc-950">Description</label>
+            <textarea
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              rows={2}
+              placeholder="Describe ingredients, combo options, or details..."
+              className="mt-1 w-full resize-none rounded-xl border border-amber-300 bg-amber-50/30 px-3.5 py-2.5 text-sm font-semibold text-zinc-950 placeholder:text-zinc-400 focus:border-[#F4BE2C] focus:outline-none"
+            />
+          </div>
+
+          {/* Price + Image URL */}
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-black uppercase text-zinc-950">Price (€)</label>
+              <input
+                type="number"
+                step="0.10"
+                value={form.basePrice}
+                onChange={(e) => setForm({ ...form, basePrice: Number(e.target.value) })}
+                className="mt-1 h-11 w-full rounded-xl border border-amber-300 bg-amber-50/30 px-3.5 text-sm font-bold text-zinc-950 focus:border-[#F4BE2C] focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-black uppercase text-zinc-950">Image URL</label>
+              <input
+                type="text"
+                value={form.imageUrl}
+                onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+                placeholder="/images/menu/durum_real.jpg"
+                className="mt-1 h-11 w-full rounded-xl border border-amber-300 bg-amber-50/30 px-3.5 text-sm font-semibold text-zinc-950 focus:border-[#F4BE2C] focus:outline-none"
+              />
+            </div>
+          </div>
+
+          {/* Toggles */}
+          <div className="flex flex-wrap gap-4 pt-1">
+            <label className="flex items-center gap-2 text-xs font-bold text-zinc-900 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.isNew}
+                onChange={(e) => setForm({ ...form, isNew: e.target.checked })}
+                className="h-4 w-4 rounded border-amber-300 text-[#F4BE2C]"
+              />
+              Mark as NEW
+            </label>
+            <label className="flex items-center gap-2 text-xs font-bold text-zinc-900 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={form.isPopular}
+                onChange={(e) => setForm({ ...form, isPopular: e.target.checked })}
+                className="h-4 w-4 rounded border-amber-300 text-[#F4BE2C]"
+              />
+              Popular ★
+            </label>
+          </div>
+
+          {/* Buttons */}
+          <div className="mt-6 flex gap-3 pt-2">
+            <button
+              type="submit"
+              className="flex-1 rounded-2xl bg-[#F4BE2C] py-3.5 text-sm font-black text-zinc-950 shadow-md hover:bg-amber-400 active:scale-95 transition-all"
+            >
+              {form.isSpecialOffer ? 'Add Special Offer 🔥' : 'Save Product'}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-2xl border border-amber-300 bg-amber-50 px-5 py-3.5 text-sm font-bold text-zinc-900 hover:bg-amber-100"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   )

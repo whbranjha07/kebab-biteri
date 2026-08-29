@@ -194,7 +194,7 @@ export default function ProductPage() {
       </div>
 
       {/* Main Content Sheet Container */}
-      <div className="flex flex-1 flex-col rounded-t-3xl -mt-4 bg-[#FFFDF2] px-5 pb-36 pt-5 shadow-2xl relative z-10 border-t border-amber-200">
+      <div className="flex flex-1 flex-col rounded-t-3xl -mt-4 bg-[#FFFDF2] px-5 pb-44 pt-5 shadow-2xl relative z-10 border-t border-amber-200">
         {/* Title + Price Row */}
         <div className="flex items-start justify-between gap-3">
           <div className="flex-1">
@@ -374,7 +374,7 @@ export default function ProductPage() {
       </div>
 
       {/* Sticky Bottom Add To Cart CTA */}
-      <div className="fixed bottom-0 right-0 left-0 lg:left-64 z-30 app-container border-t border-amber-200 bg-white/95 p-4 backdrop-blur-xl safe-bottom">
+      <div className="fixed bottom-[60px] lg:bottom-0 right-0 left-0 lg:left-64 z-30 app-container border-t border-amber-200 bg-white/95 p-3.5 backdrop-blur-xl safe-bottom shadow-lg">
         <Button
           size="xl"
           fullWidth

@@ -8,6 +8,8 @@ import { formatPrice, formatTime, cn } from '@/lib/utils'
 import { toast } from '@/components/ui/toaster'
 import { useOrder, cancelOrder } from '@/hooks/use-orders'
 import { getAccessToken } from '@/lib/api-client'
+import { useCartStore } from '@/lib/cart-store'
+import type { CartItem } from '@kebab-biteri/types'
 import { restaurantInfo } from '@/data/menu-data'
 import { TrackingMap } from '@/components/order/tracking-map'
 
@@ -85,6 +87,30 @@ export default function OrderDetailPage() {
     }
   }
 
+  const addItem = useCartStore((s) => s.addItem)
+
+  const handleOrderAgain = () => {
+    if (!order || !order.items) return
+    for (const item of order.items) {
+      const cartItem: CartItem = {
+        id: `ci-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        productId: item.productId,
+        productName: item.productName,
+        productImage: '/images/menu/kebab_pita_real.jpg',
+        variantId: (item as any).variantId ?? null,
+        variantName: item.variantName ?? null,
+        unitPrice: item.unitPrice,
+        quantity: item.quantity,
+        modifiers: [],
+        lineTotal: item.lineTotal,
+        notes: item.notes ?? null,
+      }
+      addItem(cartItem)
+    }
+    toast.success('Order items added to cart! Proceeding to checkout...')
+    router.push('/checkout')
+  }
+
   return (
     <div className="flex min-h-dvh flex-col">
       <header className="safe-top sticky top-0 z-20 bg-surface/95 px-4 pb-3 pt-3 backdrop-blur-lg">
@@ -99,7 +125,7 @@ export default function OrderDetailPage() {
         </div>
       </header>
 
-      <div className="flex-1 px-4 py-4">
+      <div className="flex-1 px-4 py-4 pb-32">
         {!isCancelled && (
           <div className="mb-5 rounded-2xl bg-primary-50 p-4 text-center">
             <p className="text-xs font-medium text-muted">
@@ -215,8 +241,8 @@ export default function OrderDetailPage() {
             <Button variant="danger" fullWidth onClick={handleCancel}>Cancel order</Button>
           )}
           <div className="flex gap-3">
-            <Button variant="outline" fullWidth onClick={() => router.push('/')}>Home</Button>
-            <Button variant="secondary" fullWidth onClick={() => router.push('/menu')}>Order again</Button>
+            <Button variant="outline" fullWidth onClick={() => router.push('/orders')}>View All Orders</Button>
+            <Button variant="secondary" fullWidth onClick={handleOrderAgain} className="bg-[#F4BE2C] text-zinc-950 font-black hover:bg-amber-400">Order Again 🔄</Button>
           </div>
         </div>
       </div>

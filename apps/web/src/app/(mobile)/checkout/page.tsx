@@ -176,7 +176,7 @@ export default function CheckoutPage() {
         </div>
       </header>
 
-      <div className="flex-1 px-4 py-4 pb-32">
+      <div className="flex-1 px-4 py-4 pb-40">
         {/* Step 0: Delivery info */}
         {step === 0 && (
           <div className="space-y-5 animate-fade-in">
@@ -376,7 +376,7 @@ export default function CheckoutPage() {
       </div>
 
       {/* Sticky CTA */}
-      <div className="fixed bottom-0 right-0 left-0 lg:left-64 z-30 app-container border-t border-amber-200 bg-white/95 p-4 backdrop-blur-lg safe-bottom pb-[calc(1rem+env(safe-area-inset-bottom))]">
+      <div className="fixed bottom-[60px] lg:bottom-0 right-0 left-0 lg:left-64 z-30 app-container border-t border-amber-200 bg-white/95 p-3.5 backdrop-blur-lg safe-bottom shadow-lg">
         {step < 2 ? (
           <Button size="xl" fullWidth onClick={() => {
             if (step === 0) {
@@ -385,11 +385,11 @@ export default function CheckoutPage() {
               if (!phone.trim()) { toast.error(locale === 'es-ES' ? 'Por favor introduce tu teléfono' : 'Please enter your phone number'); return }
             }
             setStep(step + 1)
-          }} className="font-black">
+          }} className="font-black shadow-md">
             {t('checkout.continue')} →
           </Button>
         ) : (
-          <Button size="xl" fullWidth loading={placing} onClick={handlePlaceOrder} disabled={placing} className="font-black">
+          <Button size="xl" fullWidth loading={placing} onClick={handlePlaceOrder} disabled={placing} className="font-black shadow-md">
             {placing ? t('checkout.placingOrder') : `${t('checkout.placeOrder')} · ${formatPrice(total)}`}
           </Button>
         )}

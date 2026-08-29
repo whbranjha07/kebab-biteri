@@ -70,7 +70,7 @@ export default function CartPage() {
         </div>
       </header>
 
-      <div className="flex-1 px-4 py-4 pb-28">
+      <div className="flex-1 px-4 py-4 pb-40">
         {/* Minimum Order Fee Banner (< 11€) */}
         <div className="mb-4 rounded-2xl p-3.5 border text-xs shadow-xs transition-all">
           {isFreeDelivery ? (
@@ -218,9 +218,8 @@ export default function CartPage() {
         </div>
       </div>
 
-      {/* Sticky checkout CTA */}
-      <div className="fixed bottom-0 right-0 left-0 lg:left-64 z-30 app-container border-t border-amber-200 bg-white/95 p-4 backdrop-blur-lg safe-bottom pb-[calc(1rem+env(safe-area-inset-bottom))]">
-        <Button size="xl" fullWidth onClick={() => router.push('/checkout')} className="font-black">
+      <div className="fixed bottom-[60px] lg:bottom-0 right-0 left-0 lg:left-64 z-30 app-container border-t border-amber-200 bg-white/95 p-3.5 backdrop-blur-lg safe-bottom shadow-lg">
+        <Button size="xl" fullWidth onClick={() => router.push('/checkout')} className="font-black shadow-md">
           {t('cart.checkout')} · {formatPrice(total)}
         </Button>
       </div>

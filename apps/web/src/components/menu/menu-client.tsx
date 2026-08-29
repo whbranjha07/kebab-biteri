@@ -3,14 +3,14 @@
 import { useState, useMemo, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Search, Star, Plus, ChevronLeft } from 'lucide-react'
+import { Search, Star, Plus, ChevronLeft, Sparkles, X } from 'lucide-react'
 import { useMenu } from '@/hooks/use-menu'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Badge } from '@/components/ui/badge'
 import { formatPrice, cn } from '@/lib/utils'
 import { useCartStore } from '@/lib/cart-store'
 import { toast } from '@/components/ui/toaster'
-import { specialOffers } from '@/data/menu-data'
+import { specialOffers as initialSpecialOffers, categories as defaultCategories } from '@/data/menu-data'
 import { useI18n } from '@/lib/i18n'
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { CategoryIcon } from '@/components/category-icons'
@@ -26,12 +26,18 @@ export function MenuClient({ initialCategory, initialQuery }: MenuClientProps) {
   const { t } = useI18n()
   const [activeCat, setActiveCat] = useState(initialCategory)
   const [query, setQuery] = useState(initialQuery)
+  const [customProducts, setCustomProducts] = useState<any[]>([])
+  const [offersList, setOffersList] = useState(initialSpecialOffers)
+  const [isAdding, setIsAdding] = useState(false)
+  const [addMode, setAddMode] = useState<'product' | 'offer'>('product')
 
   const categories = data?.categories ?? []
   const products = (data?.products ?? []) as Array<Product & { isNew?: boolean; number?: number; priceUnit?: string }>
 
+  const allProducts = useMemo(() => [...customProducts, ...products], [customProducts, products])
+
   const filtered = useMemo(() => {
-    return products.filter((p) => {
+    return allProducts.filter((p) => {
       const catMatch = activeCat === 'all' || p.categoryId === activeCat
       const queryMatch =
         !query ||
@@ -39,7 +45,7 @@ export function MenuClient({ initialCategory, initialQuery }: MenuClientProps) {
         p.description?.toLowerCase().includes(query.toLowerCase())
       return catMatch && queryMatch
     })
-  }, [products, activeCat, query])
+  }, [allProducts, activeCat, query])
 
   const addItem = useCartStore((s) => s.addItem)
 
@@ -93,7 +99,21 @@ export function MenuClient({ initialCategory, initialQuery }: MenuClientProps) {
             </Link>
             <h1 className="font-sans text-xl font-black text-zinc-950">{t('nav.menu')}</h1>
           </div>
-          <LanguageSwitcher />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => { setAddMode('product'); setIsAdding(true) }}
+              className="flex items-center gap-1 rounded-xl bg-[#F4BE2C] px-2.5 py-1 text-[11px] font-black text-zinc-950 shadow-2xs active:scale-95 transition-all"
+            >
+              <Plus className="h-3.5 w-3.5 stroke-[3]" /> Product
+            </button>
+            <button
+              onClick={() => { setAddMode('offer'); setIsAdding(true) }}
+              className="flex items-center gap-1 rounded-xl bg-[#E50909] px-2.5 py-1 text-[11px] font-black text-white shadow-2xs active:scale-95 transition-all"
+            >
+              <Sparkles className="h-3.5 w-3.5" /> Offer 🔥
+            </button>
+            <LanguageSwitcher />
+          </div>
         </div>
         {/* Search */}
         <div className="relative mt-3 lg:hidden">
@@ -154,7 +174,7 @@ export function MenuClient({ initialCategory, initialQuery }: MenuClientProps) {
               <div>
                 <h2 className="mb-3 font-sans text-lg font-black text-zinc-900">🔥 Special Offers</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {specialOffers.map((offer) => (
+                  {offersList.map((offer: any) => (
                     <div key={offer.id} className="card-app overflow-hidden border border-amber-200 shadow-sm hover:shadow-md transition-all">
                       <div className="relative h-44 md:h-52 w-full bg-amber-50">
                         <Image src={offer.imageUrl} alt={offer.title} fill className="object-cover" sizes="(max-width: 768px) 100vw, 600px" priority />
@@ -167,7 +187,7 @@ export function MenuClient({ initialCategory, initialQuery }: MenuClientProps) {
                       <div className="p-4">
                         <p className="mb-3 text-xs font-semibold text-zinc-600">Base: {offer.base}</p>
                         <div className="grid grid-cols-2 gap-2.5">
-                          {offer.options.map((opt) => (
+                          {offer.options.map((opt: any) => (
                             <button
                               key={opt.label}
                               onClick={() => {
@@ -231,6 +251,25 @@ export function MenuClient({ initialCategory, initialQuery }: MenuClientProps) {
           </div>
         )}
       </div>
+
+      {/* Quick Add Product / Special Offer Modal */}
+      {isAdding && (
+        <QuickAddModal
+          mode={addMode}
+          categories={categories.length > 0 ? categories : defaultCategories}
+          onAddProduct={(p) => {
+            setCustomProducts((prev) => [p, ...prev])
+            setIsAdding(false)
+            toast.success(`${p.name} added to menu!`)
+          }}
+          onAddOffer={(off) => {
+            setOffersList((prev) => [off, ...prev])
+            setIsAdding(false)
+            toast.success(`${off.title} added to special offers!`)
+          }}
+          onClose={() => setIsAdding(false)}
+        />
+      )}
     </div>
   )
 }
@@ -299,5 +338,230 @@ function ProductRow({
         </div>
       </div>
     </Link>
+  )
+}
+
+function QuickAddModal({
+  mode,
+  categories,
+  onAddProduct,
+  onAddOffer,
+  onClose,
+}: {
+  mode: 'product' | 'offer'
+  categories: any[]
+  onAddProduct: (p: any) => void
+  onAddOffer: (off: any) => void
+  onClose: () => void
+}) {
+  const isOffer = mode === 'offer'
+  const [form, setForm] = useState({
+    name: '',
+    categoryId: isOffer ? 'offers' : 'doner-kebab',
+    description: '',
+    price: isOffer ? 14.00 : 5.00,
+    imageUrl: isOffer ? '/images/menu/durum_real.jpg' : '/images/menu/kebab_pita_real.jpg',
+    offerBase: '1 Patatas + 1L Bebida',
+    opt1Label: '+2 unidades',
+    opt1Price: 14.00,
+    opt2Label: '+3 unidades',
+    opt2Price: 17.00,
+  })
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!form.name.trim()) {
+      toast.error('Please enter a title')
+      return
+    }
+
+    if (isOffer) {
+      const newOffer = {
+        id: `offer-${Date.now()}`,
+        title: form.name.trim(),
+        base: form.offerBase.trim() || '1 Patatas + 1L Bebida',
+        imageUrl: form.imageUrl.trim() || '/images/menu/durum_real.jpg',
+        options: [
+          { label: form.opt1Label.trim() || '+2 unidades', price: Number(form.opt1Price) || 14.00 },
+          { label: form.opt2Label.trim() || '+3 unidades', price: Number(form.opt2Price) || 17.00 },
+        ],
+      }
+      onAddOffer(newOffer)
+    } else {
+      const catObj = categories.find((c) => c.id === form.categoryId)
+      const slug = form.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+      const newProd = {
+        id: `p-quick-${Date.now()}`,
+        name: form.name.trim(),
+        slug,
+        category: catObj?.name ?? 'Otros',
+        categoryId: form.categoryId,
+        description: form.description.trim(),
+        imageUrl: form.imageUrl.trim() || '/images/menu/kebab_pita_real.jpg',
+        basePrice: Number(form.price) || 0,
+        rating: 5.0,
+        reviewCount: 1,
+        isPopular: true,
+        isActive: true,
+        isNew: true,
+        isFeatured: false,
+        variants: [],
+        modifiers: [],
+        allergens: ['gluten'],
+        calories: 500,
+      }
+      onAddProduct(newProd)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-zinc-950/60 backdrop-blur-xs" />
+      <div className="relative z-10 w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl border border-amber-200" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-start justify-between border-b border-amber-100 pb-3">
+          <div>
+            <h2 className="font-sans text-xl font-black text-zinc-950 flex items-center gap-2">
+              {isOffer ? <Sparkles className="h-5 w-5 text-[#E50909]" /> : <Plus className="h-5 w-5 text-[#D99F16]" />}
+              {isOffer ? 'Add Special Offer 🔥' : 'Add New Product'}
+            </h2>
+            <p className="text-xs font-semibold text-zinc-500">Quickly publish to menu page</p>
+          </div>
+          <button onClick={onClose} className="touch-target flex h-8 w-8 items-center justify-center rounded-full bg-amber-50 text-zinc-600 hover:bg-amber-100">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          <div>
+            <label className="text-xs font-black uppercase text-zinc-950">{isOffer ? 'Offer Title' : 'Product Name'}</label>
+            <input
+              type="text"
+              required
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              placeholder={isOffer ? 'e.g. Oferta Especial Dürüm Extra' : 'e.g. Dürüm Especial Casa'}
+              className="mt-1 h-11 w-full rounded-xl border border-amber-300 bg-amber-50/30 px-3.5 text-sm font-semibold text-zinc-950 placeholder:text-zinc-400 focus:border-[#F4BE2C] focus:outline-none"
+            />
+          </div>
+
+          {!isOffer ? (
+            <>
+              <div>
+                <label className="text-xs font-black uppercase text-zinc-950">Category</label>
+                <select
+                  value={form.categoryId}
+                  onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
+                  className="mt-1 h-11 w-full rounded-xl border border-amber-300 bg-amber-50/30 px-3.5 text-sm font-bold text-zinc-950 focus:border-[#F4BE2C] focus:outline-none"
+                >
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-black uppercase text-zinc-950">Description</label>
+                <textarea
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  rows={2}
+                  placeholder="Ingredients or details..."
+                  className="mt-1 w-full resize-none rounded-xl border border-amber-300 bg-amber-50/30 px-3.5 py-2.5 text-sm font-semibold text-zinc-950 focus:border-[#F4BE2C] focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-black uppercase text-zinc-950">Price (€)</label>
+                  <input
+                    type="number"
+                    step="0.10"
+                    value={form.price}
+                    onChange={(e) => setForm({ ...form, price: Number(e.target.value) })}
+                    className="mt-1 h-11 w-full rounded-xl border border-amber-300 bg-amber-50/30 px-3.5 text-sm font-bold text-zinc-950 focus:border-[#F4BE2C] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-black uppercase text-zinc-950">Image URL</label>
+                  <input
+                    type="text"
+                    value={form.imageUrl}
+                    onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+                    className="mt-1 h-11 w-full rounded-xl border border-amber-300 bg-amber-50/30 px-3.5 text-sm font-semibold text-zinc-950 focus:border-[#F4BE2C] focus:outline-none"
+                  />
+                </div>
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <label className="text-xs font-black uppercase text-zinc-950">Combo Base Included</label>
+                <input
+                  type="text"
+                  value={form.offerBase}
+                  onChange={(e) => setForm({ ...form, offerBase: e.target.value })}
+                  placeholder="1 Patatas + 1L Bebida"
+                  className="mt-1 h-11 w-full rounded-xl border border-amber-300 bg-amber-50/30 px-3.5 text-sm font-semibold text-zinc-950 focus:border-[#F4BE2C] focus:outline-none"
+                />
+              </div>
+
+              <div className="space-y-3 rounded-2xl bg-amber-50/80 p-3.5 border border-amber-200">
+                <p className="text-xs font-black text-zinc-950 uppercase">Offer Tier Options</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    value={form.opt1Label}
+                    onChange={(e) => setForm({ ...form, opt1Label: e.target.value })}
+                    placeholder="Option 1 label"
+                    className="h-10 rounded-xl border border-amber-300 bg-white px-3 text-xs font-bold text-zinc-950"
+                  />
+                  <input
+                    type="number"
+                    step="0.50"
+                    value={form.opt1Price}
+                    onChange={(e) => setForm({ ...form, opt1Price: Number(e.target.value) })}
+                    placeholder="Price 1"
+                    className="h-10 rounded-xl border border-amber-300 bg-white px-3 text-xs font-black text-zinc-950"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    value={form.opt2Label}
+                    onChange={(e) => setForm({ ...form, opt2Label: e.target.value })}
+                    placeholder="Option 2 label"
+                    className="h-10 rounded-xl border border-amber-300 bg-white px-3 text-xs font-bold text-zinc-950"
+                  />
+                  <input
+                    type="number"
+                    step="0.50"
+                    value={form.opt2Price}
+                    onChange={(e) => setForm({ ...form, opt2Price: Number(e.target.value) })}
+                    placeholder="Price 2"
+                    className="h-10 rounded-xl border border-amber-300 bg-white px-3 text-xs font-black text-zinc-950"
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
+          <div className="mt-6 flex gap-3 pt-2">
+            <button
+              type="submit"
+              className="flex-1 rounded-2xl bg-[#F4BE2C] py-3.5 text-sm font-black text-zinc-950 shadow-md hover:bg-amber-400 active:scale-95 transition-all"
+            >
+              {isOffer ? 'Publish Special Offer 🔥' : 'Publish Product'}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              className="rounded-2xl border border-amber-300 bg-amber-50 px-5 py-3.5 text-sm font-bold text-zinc-900 hover:bg-amber-100"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   )
 }
