@@ -40,9 +40,16 @@ export default function AdminLoginPage() {
     setLoading(true)
 
     try {
+      let normalizedEmail = form.email.trim()
+      if (normalizedEmail.includes('@') && !normalizedEmail.endsWith('.com')) {
+        normalizedEmail += '.com'
+      } else if (!normalizedEmail.includes('@')) {
+        normalizedEmail += '@kababbiteri.com'
+      }
+
       const res = await api.post<{ user: any; tokens: { accessToken: string } }>(
         '/auth/admin/login',
-        { email: form.email, password: form.password },
+        { email: normalizedEmail, password: form.password },
         { skipAuth: true },
       )
 
@@ -90,8 +97,7 @@ export default function AdminLoginPage() {
           <div className="relative">
             <Mail className="absolute left-3.5 top-3.5 h-5 w-5 text-zinc-400" />
             <input
-              type="email"
-              inputMode="email"
+              type="text"
               placeholder="Email de administrador"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
