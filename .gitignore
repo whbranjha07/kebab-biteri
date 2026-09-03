@@ -1,0 +1,21 @@
+node_modules/
+.next/
+dist/
+dist-seed/
+.env
+.env.local
+.env.*.local
+*.log
+.DS_Store
+coverage/
+.turbo/
+prisma/migrations/dev.db*
+prisma/*.db
+*.tsbuildinfo
+
+# Firebase service account keys — NEVER commit these
+firebase-service-account*.json
+service-account*.json
+*firebase-adminsdk*.json
+.pnpm-store/
+.vscode/
