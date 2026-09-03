@@ -1,0 +1,13 @@
+{
+  "installCommand": "cd ../.. && node scripts/vercel-install.js apps/api && npm install && npm run build --workspace=@kebab-biteri/types",
+  "buildCommand": "echo skip",
+  "framework": null,
+  "rewrites": [
+    { "source": "/health", "destination": "/api/health" },
+    { "source": "/(.*)", "destination": "/api" }
+  ],
+  "functions": {
+    "api/index.ts": { "maxDuration": 30 },
+    "api/health.ts": { "maxDuration": 10 }
+  }
+}

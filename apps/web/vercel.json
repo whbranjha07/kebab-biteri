@@ -1,0 +1,5 @@
+{
+  "framework": "nextjs",
+  "installCommand": "cd ../.. && node scripts/vercel-install.js apps/web && npm install && npm run build --workspace=@kebab-biteri/types",
+  "buildCommand": "cd ../.. && npm run build --workspace=apps/web"
+}
