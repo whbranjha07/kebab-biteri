@@ -22,7 +22,15 @@ export interface Order {
   subtotal: number
   deliveryFee: number
   discount: number
+  tax?: number
   total: number
+  receiptNumber?: string | null
+  amountReceived?: number | null
+  changeAmount?: number | null
+  cashierId?: string | null
+  cashierName?: string | null
+  customerName?: string | null
+  customerPhone?: string | null
   paymentStatus: PaymentStatus
   paymentMethod: PaymentMethod | null
   branchId: string

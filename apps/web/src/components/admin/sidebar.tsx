@@ -6,12 +6,15 @@ import { useState } from 'react'
 import {
   LayoutDashboard, Package, ChefHat, UtensilsCrossed,
   BarChart3, Settings, Menu as MenuIcon, X, Truck,
+  Printer, Receipt,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { LogoMark } from '@/components/logo'
 
 const navItems = [
   { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/admin/billing', label: 'Billing / POS', icon: Printer },
+  { href: '/admin/billing/history', label: 'Billing History', icon: Receipt },
   { href: '/admin/orders', label: 'Orders', icon: Package },
   { href: '/admin/kitchen', label: 'Kitchen', icon: ChefHat },
   { href: '/admin/delivery', label: 'Delivery', icon: Truck },

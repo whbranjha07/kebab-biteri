@@ -3,13 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "node node_modules/typescript/bin/tsc --outDir dist --module commonjs --moduleResolution node --target ES2022 --experimentalDecorators --emitDecoratorMetadata --esModuleInterop --skipLibCheck --noEmitOnError false --rootDir src src/main.ts && node dist/main.js",
-    "build": "node node_modules/typescript/bin/tsc --outDir dist --module commonjs --moduleResolution node --target ES2022 --experimentalDecorators --emitDecoratorMetadata --esModuleInterop --skipLibCheck --rootDir src src/main.ts",
+    "dev": "npx tsc --outDir dist --module commonjs --moduleResolution node --target ES2022 --experimentalDecorators --emitDecoratorMetadata --esModuleInterop --skipLibCheck --noEmitOnError false --rootDir src src/main.ts && node dist/main.js",
+    "build": "npx tsc --outDir dist --module commonjs --moduleResolution node --target ES2022 --experimentalDecorators --emitDecoratorMetadata --esModuleInterop --skipLibCheck --rootDir src src/main.ts",
     "start": "node dist/main",
     "lint": "eslint src --ext .ts",
     "typecheck": "tsc --noEmit",
-    "seed": "node node_modules/typescript/bin/tsc --outDir dist-seed --module commonjs --moduleResolution node --target ES2022 --esModuleInterop --skipLibCheck prisma/seed.ts && node dist-seed/seed.js",
-    "start:dev": "node node_modules/typescript/bin/tsc --outDir dist --module commonjs --moduleResolution node --target ES2022 --experimentalDecorators --emitDecoratorMetadata --esModuleInterop --skipLibCheck --noEmitOnError false --rootDir src src/main.ts && node dist/main.js"
+    "seed": "npx tsc --outDir dist-seed --module commonjs --moduleResolution node --target ES2022 --esModuleInterop --skipLibCheck prisma/seed.ts && node dist-seed/seed.js",
+    "start:dev": "npx tsc --outDir dist --module commonjs --moduleResolution node --target ES2022 --experimentalDecorators --emitDecoratorMetadata --esModuleInterop --skipLibCheck --noEmitOnError false --rootDir src src/main.ts && node dist/main.js"
   },
   "dependencies": {
     "@kebab-biteri/types": "file:../../packages/types",

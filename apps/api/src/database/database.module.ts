@@ -10,6 +10,7 @@ import {
   Coupon, CouponSchema,
   Address, AddressSchema,
   Notification, NotificationSchema,
+  StoreSettings, StoreSettingsSchema,
 } from '../schemas'
 
 const DB_URL = process.env.DATABASE_URL || 'mongodb://localhost:27017/kebab-biteri'
@@ -27,6 +28,7 @@ const DB_URL = process.env.DATABASE_URL || 'mongodb://localhost:27017/kebab-bite
       { name: Coupon.name, schema: CouponSchema },
       { name: Address.name, schema: AddressSchema },
       { name: Notification.name, schema: NotificationSchema },
+      { name: StoreSettings.name, schema: StoreSettingsSchema },
     ]),
   ],
   exports: [MongooseModule],

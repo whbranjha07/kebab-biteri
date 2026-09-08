@@ -125,4 +125,52 @@ export class AdminController {
   async getCustomers(@Query() query: PaginationDto) {
     return this.adminService.getCustomers(query.page, query.limit)
   }
+
+  // ─── POS Billing ──────────────────────────────────
+  @Post('billing/orders')
+  async createBillingOrder(
+    @Body() body: {
+      userId?: string
+      customerName?: string
+      customerPhone?: string
+      orderType: string
+      items: Array<{ productId: string; variantName?: string; quantity: number; notes?: string }>
+      paymentMethod: string
+      amountReceived?: number
+      discount?: number
+      tax?: number
+    },
+    @CurrentUser() user?: { userId?: string },
+  ) {
+    return this.adminService.createBillingOrder(body, user?.userId || '')
+  }
+
+  @Get('billing/history')
+  async getBillingHistory(
+    @Query() query: PaginationDto,
+    @Query('search') search?: string,
+  ) {
+    return this.adminService.getBillingHistory(query.page, query.limit, search)
+  }
+
+  @Get('billing/receipt/:orderId')
+  async getReceiptData(@Param('orderId') orderId: string) {
+    return this.adminService.getReceiptData(orderId)
+  }
+
+  @Post('billing/print-test')
+  async printTestReceipt() {
+    return this.adminService.printTestReceipt()
+  }
+
+  // ─── Store & Printer Settings ─────────────────────
+  @Get('settings')
+  async getSettings() {
+    return this.adminService.getSettings()
+  }
+
+  @Patch('settings')
+  async updateSettings(@Body() body: Record<string, unknown>) {
+    return this.adminService.updateSettings(body)
+  }
 }

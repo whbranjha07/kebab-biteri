@@ -28,9 +28,209 @@ export default function AdminSettingsPage() {
                 <p className="text-sm text-muted">{s.desc}</p>
               </div>
             </div>
-          )
-        })}
-      </div>
+          </div>
+        </div>
+
+        {/* System & Localization Settings */}
+        <div className="rounded-3xl border border-amber-200 bg-white p-6 shadow-sm space-y-4">
+          <h2 className="font-sans text-base font-black text-zinc-950 flex items-center gap-2 border-b border-amber-100 pb-3">
+            <Globe className="h-5 w-5 text-[#D99F16]" /> System & Localization
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-black uppercase text-zinc-950">Default System Language</label>
+              <select
+                value={form.defaultLanguage}
+                onChange={(e) => setForm({ ...form, defaultLanguage: e.target.value })}
+                className="mt-1 h-11 w-full rounded-2xl border border-amber-300 bg-amber-50/20 px-3.5 text-sm font-bold text-zinc-950 focus:border-[#F4BE2C] focus:outline-none"
+              >
+                <option value="es-ES">Spanish (Español 🇪🇸)</option>
+                <option value="en-US">English (🇬🇧)</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-xs font-black uppercase text-zinc-950">Currency Symbol</label>
+              <input
+                type="text"
+                value={form.currencySymbol}
+                onChange={(e) => setForm({ ...form, currencySymbol: e.target.value })}
+                className="mt-1 h-11 w-full rounded-2xl border border-amber-300 bg-amber-50/20 px-3.5 text-sm font-bold text-zinc-950 focus:border-[#F4BE2C] focus:outline-none"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Real Thermal Printer Configuration */}
+        <div className="rounded-3xl border border-amber-200 bg-white p-6 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-amber-100 pb-3">
+            <h2 className="font-sans text-base font-black text-zinc-950 flex items-center gap-2">
+              <Store className="h-5 w-5 text-[#D99F16]" /> Thermal Receipt Printer Settings
+            </h2>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const bridgeUrl = (form as any).printerBridgeUrl || 'http://localhost:9123'
+                    const res = await fetch(`${bridgeUrl}/status`).catch(() => null)
+                    if (res && res.ok) {
+                      toast.success('🟢 Kebab Biteri Counter Printer Connected & Ready')
+                    } else {
+                      toast.error('🔴 Printer / Print Bridge Disconnected')
+                    }
+                  } catch (e) {
+                    toast.error('🔴 Printer / Print Bridge Disconnected')
+                  }
+                }}
+                className="rounded-xl bg-amber-100 px-3 py-1 text-xs font-extrabold text-amber-900 hover:bg-amber-200"
+              >
+                Check Connection Status
+              </button>
+
+              <button
+                type="button"
+                onClick={async () => {
+                  try {
+                    const testRes = await api.post<any>('/admin/billing/print-test', {})
+                    if (testRes && testRes.testReceipt) {
+                      const bridgeUrl = (form as any).printerBridgeUrl || 'http://localhost:9123'
+                      const printRes = await fetch(`${bridgeUrl}/print`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                          connectionType: (form as any).printerConnectionType || 'BRIDGE',
+                          printerIp: (form as any).printerIp,
+                          printerPort: (form as any).printerPort,
+                          rawBuffer: [27, 64, 27, 97, 1, 27, 33, 16, 75, 69, 66, 65, 66, 32, 66, 73, 84, 69, 82, 73, 10],
+                          receiptNumber: 'TEST-000',
+                        }),
+                      }).catch(() => null)
+
+                      if (printRes && printRes.ok) {
+                        toast.success('Physical printer test command dispatched!')
+                      } else {
+                        toast.error('Test receipt generated on server, but local Print Bridge was unreachable.')
+                      }
+                    }
+                  } catch (err: any) {
+                    toast.error('Could not initiate test print')
+                  }
+                }}
+                className="rounded-xl bg-[#F4BE2C] px-3 py-1 text-xs font-black text-zinc-950 hover:bg-amber-400"
+              >
+                Print Test Receipt
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="text-xs font-black uppercase text-zinc-950">Printer Name</label>
+              <input
+                type="text"
+                value={(form as any).printerName || 'Kebab Biteri Counter Printer'}
+                onChange={(e) => setForm({ ...form, printerName: e.target.value } as any)}
+                className="mt-1 h-11 w-full rounded-2xl border border-amber-300 bg-amber-50/20 px-3.5 text-sm font-bold text-zinc-950 focus:border-[#F4BE2C] focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="text-xs font-black uppercase text-zinc-950">Connection Type</label>
+              <select
+                value={(form as any).printerConnectionType || 'BRIDGE'}
+                onChange={(e) => setForm({ ...form, printerConnectionType: e.target.value } as any)}
+                className="mt-1 h-11 w-full rounded-2xl border border-amber-300 bg-amber-50/20 px-3.5 text-sm font-bold text-zinc-950 focus:border-[#F4BE2C] focus:outline-none"
+              >
+                <option value="BRIDGE">Local Print Bridge (HTTP daemon on PC)</option>
+                <option value="LAN">Network LAN / Ethernet Printer (TCP Direct)</option>
+                <option value="USB">Direct USB Thermal Printer</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs font-black uppercase text-zinc-950">Paper Width Size</label>
+              <select
+                value={(form as any).printerPaperSize || '80mm'}
+                onChange={(e) => setForm({ ...form, printerPaperSize: e.target.value } as any)}
+                className="mt-1 h-11 w-full rounded-2xl border border-amber-300 bg-amber-50/20 px-3.5 text-sm font-bold text-zinc-950 focus:border-[#F4BE2C] focus:outline-none"
+              >
+                <option value="80mm">80mm Standard Thermal Paper (48 cols)</option>
+                <option value="58mm">58mm Compact Thermal Paper (32 cols)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs font-black uppercase text-zinc-950">Local Print Bridge URL</label>
+              <input
+                type="text"
+                value={(form as any).printerBridgeUrl || 'http://localhost:9123'}
+                onChange={(e) => setForm({ ...form, printerBridgeUrl: e.target.value } as any)}
+                className="mt-1 h-11 w-full rounded-2xl border border-amber-300 bg-amber-50/20 px-3.5 text-sm font-bold text-zinc-950 focus:border-[#F4BE2C] focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-black uppercase text-zinc-950">Network Printer IP (for LAN)</label>
+              <input
+                type="text"
+                value={(form as any).printerIp || '192.168.1.100'}
+                onChange={(e) => setForm({ ...form, printerIp: e.target.value } as any)}
+                className="mt-1 h-11 w-full rounded-2xl border border-amber-300 bg-amber-50/20 px-3.5 text-sm font-bold text-zinc-950 focus:border-[#F4BE2C] focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-black uppercase text-zinc-950">Receipt Prefix</label>
+              <input
+                type="text"
+                value={(form as any).receiptPrefix || 'KB-'}
+                onChange={(e) => setForm({ ...form, receiptPrefix: e.target.value } as any)}
+                className="mt-1 h-11 w-full rounded-2xl border border-amber-300 bg-amber-50/20 px-3.5 text-sm font-bold text-zinc-950 focus:border-[#F4BE2C] focus:outline-none"
+              />
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-2xl bg-amber-50 border border-amber-200">
+              <div>
+                <p className="text-xs font-black text-zinc-950">Auto-Print Receipts</p>
+                <p className="text-[10px] font-semibold text-zinc-500">Automatically print on completed bills</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, autoPrintReceipt: !(form as any).autoPrintReceipt } as any)}
+                className={`flex h-7 w-12 items-center rounded-full p-1 transition-colors ${(form as any).autoPrintReceipt !== false ? 'bg-[#F4BE2C]' : 'bg-zinc-300'}`}
+              >
+                <div className={`h-5 w-5 rounded-full bg-white shadow-md transition-transform ${(form as any).autoPrintReceipt !== false ? 'translate-x-5' : 'translate-x-0'}`} />
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between p-3 rounded-2xl bg-amber-50 border border-amber-200">
+              <div>
+                <p className="text-xs font-black text-zinc-950">Open Cash Drawer</p>
+                <p className="text-[10px] font-semibold text-zinc-500">Send kick pulse on cash payment</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setForm({ ...form, openCashDrawerOnCash: !(form as any).openCashDrawerOnCash } as any)}
+                className={`flex h-7 w-12 items-center rounded-full p-1 transition-colors ${(form as any).openCashDrawerOnCash !== false ? 'bg-[#F4BE2C]' : 'bg-zinc-300'}`}
+              >
+                <div className={`h-5 w-5 rounded-full bg-white shadow-md transition-transform ${(form as any).openCashDrawerOnCash !== false ? 'translate-x-5' : 'translate-x-0'}`} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Save Button */}
+        <div className="pt-2">
+          <Button
+            type="submit"
+            size="xl"
+            loading={saving}
+            disabled={saving}
+            className="w-full md:w-auto font-black px-8"
+          >
+            <Save className="h-5 w-5 stroke-[2.5]" /> Save All Settings
+          </Button>
+        </div>
+      </form>
     </div>
   )
 }

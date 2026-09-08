@@ -20,6 +20,8 @@ export enum OrderStatus {
 export enum OrderType {
   DELIVERY = 'DELIVERY',
   PICKUP = 'PICKUP',
+  TAKEAWAY = 'TAKEAWAY',
+  DINE_IN = 'DINE_IN',
 }
 
 export enum PaymentStatus {

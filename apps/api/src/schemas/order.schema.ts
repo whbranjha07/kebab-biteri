@@ -53,7 +53,7 @@ export class Order {
   @Prop({ enum: ['PENDING', 'ACCEPTED', 'PREPARING', 'READY', 'OUT_FOR_DELIVERY', 'DELIVERED', 'CANCELLED', 'REJECTED'], default: 'PENDING' })
   status: string
 
-  @Prop({ enum: ['DELIVERY', 'PICKUP'], default: 'DELIVERY' })
+  @Prop({ enum: ['DELIVERY', 'PICKUP', 'TAKEAWAY', 'DINE_IN'], default: 'DELIVERY' })
   orderType: string
 
   @Prop({ required: true })
@@ -65,8 +65,26 @@ export class Order {
   @Prop({ default: 0 })
   discount: number
 
+  @Prop({ default: 0 })
+  tax: number
+
   @Prop({ required: true })
   total: number
+
+  @Prop({ unique: true, sparse: true })
+  receiptNumber: string
+
+  @Prop()
+  amountReceived: number
+
+  @Prop()
+  changeAmount: number
+
+  @Prop()
+  cashierId: string
+
+  @Prop()
+  cashierName: string
 
   @Prop()
   notes: string

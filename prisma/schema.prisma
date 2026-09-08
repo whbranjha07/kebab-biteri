@@ -35,6 +35,19 @@ enum OrderStatus {
 enum OrderType {
   DELIVERY
   PICKUP
+  TAKEAWAY
+  DINE_IN
+}
+
+enum ConnectionType {
+  USB
+  LAN
+  BRIDGE
+}
+
+enum PaperSize {
+  SIZE_58MM
+  SIZE_80MM
 }
 
 enum PaymentStatus {
@@ -363,7 +376,13 @@ model Order {
   subtotal           Float
   deliveryFee        Float          @default(0)
   discount           Float          @default(0)
-  total             Float
+  tax                Float          @default(0)
+  total              Float
+  receiptNumber      String?        @unique
+  amountReceived     Float?
+  changeAmount       Float?
+  cashierId          String?        @db.ObjectId
+  cashierName        String?
   notes              String?
   estimatedDeliveryAt DateTime?
   placedAt           DateTime       @default(now())
@@ -559,4 +578,27 @@ model AuditLog {
   user      User?    @relation(fields: [userId], references: [id])
 
   @@index([userId])
+}
+
+// ─── Printer Settings ───────────────────────────────
+
+model PrinterSettings {
+  id             String         @id @default(auto()) @map("_id") @db.ObjectId
+  printerName    String         @default("Kebab Biteri Counter Printer")
+  connectionType ConnectionType @default(BRIDGE)
+  paperSize      PaperSize      @default(SIZE_80MM)
+  printerIp      String?        @default("192.168.1.100")
+  printerPort    Int?           @default(9100)
+  bridgeUrl      String?        @default("http://localhost:9123")
+  autoPrint      Boolean        @default(true)
+  copies         Int            @default(1)
+  openCashDrawer Boolean        @default(true)
+  restaurantName String         @default("KEBAB BITERI")
+  address        String         @default("Calle Mayor 12, Madrid")
+  phone          String         @default("+34 912 345 678")
+  email          String         @default("info@kebabbiteri.com")
+  receiptPrefix  String         @default("KB-")
+  headerText     String?        @default("WELCOME TO KEBAB BITERI")
+  footerText     String?        @default("THANK YOU FOR YOUR VISIT!")
+  updatedAt      DateTime       @updatedAt
 }
