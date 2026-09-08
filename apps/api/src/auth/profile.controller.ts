@@ -9,7 +9,7 @@ import { NotificationsService } from '../notifications/notifications.service'
 @UseGuards(JwtAuthGuard)
 export class ProfileController {
   constructor(
-    @InjectModel(User.name) private userModel: Model<User>,
+    @InjectModel('User') private userModel: Model<User>,
     private notificationsService: NotificationsService,
   ) {}
 

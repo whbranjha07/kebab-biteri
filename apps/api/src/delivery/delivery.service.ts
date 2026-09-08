@@ -7,8 +7,8 @@ import { WebsocketGateway } from '../websockets/websocket.gateway'
 @Injectable()
 export class DeliveryService {
   constructor(
-    @InjectModel(Order.name) private orderModel: Model<Order>,
-    @InjectModel(User.name) private userModel: Model<User>,
+    @InjectModel('Order') private orderModel: Model<Order>,
+    @InjectModel('User') private userModel: Model<User>,
     private wsGateway: WebsocketGateway,
   ) {}
 

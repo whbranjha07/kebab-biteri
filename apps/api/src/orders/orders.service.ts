@@ -24,9 +24,9 @@ export class OrdersService {
   private readonly logger = new Logger(OrdersService.name)
 
   constructor(
-    @InjectModel(Order.name) private orderModel: Model<Order>,
-    @InjectModel(Coupon.name) private couponModel: Model<Coupon>,
-    @InjectModel(User.name) private userModel: Model<User>,
+    @InjectModel('Order') private orderModel: Model<Order>,
+    @InjectModel('Coupon') private couponModel: Model<Coupon>,
+    @InjectModel('User') private userModel: Model<User>,
     private wsGateway: WebsocketGateway,
     private notificationsService: NotificationsService,
   ) {}

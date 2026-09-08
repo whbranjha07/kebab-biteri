@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common'
 import { InjectModel } from '@nestjs/mongoose'
 import { Model, Types } from 'mongoose'
-import { Order, Product, Category, Branch, Coupon, Promotion, User } from '../schemas'
+import { Order, Product, Category, Branch, Coupon, Promotion, User, StoreSettings } from '../schemas'
 import { OrdersService } from '../orders/orders.service'
 
 function slugify(text: string): string {
@@ -11,13 +11,14 @@ function slugify(text: string): string {
 @Injectable()
 export class AdminService {
   constructor(
-    @InjectModel(Order.name) private orderModel: Model<Order>,
-    @InjectModel(Product.name) private productModel: Model<Product>,
-    @InjectModel(Category.name) private categoryModel: Model<Category>,
-    @InjectModel(Branch.name) private branchModel: Model<Branch>,
-    @InjectModel(Coupon.name) private couponModel: Model<Coupon>,
-    @InjectModel(Promotion.name) private promotionModel: Model<Promotion>,
-    @InjectModel(User.name) private userModel: Model<User>,
+    @InjectModel('Order') private orderModel: Model<Order>,
+    @InjectModel('Product') private productModel: Model<Product>,
+    @InjectModel('Category') private categoryModel: Model<Category>,
+    @InjectModel('Branch') private branchModel: Model<Branch>,
+    @InjectModel('Coupon') private couponModel: Model<Coupon>,
+    @InjectModel('Promotion') private promotionModel: Model<Promotion>,
+    @InjectModel('User') private userModel: Model<User>,
+    @InjectModel('StoreSettings') private settingsModel: Model<StoreSettings>,
     private ordersService: OrdersService,
   ) {}
 

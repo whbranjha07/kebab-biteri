@@ -25,45 +25,47 @@ interface UseFcmResult extends FcmState {
 let messagingInstance: any = null
 let firebaseApp: any = null
 
-async function getMessaging() {
+async function getMessagingInstance() {
   if (messagingInstance) return { messaging: messagingInstance }
   if (typeof window === 'undefined') return null
 
-  const { initializeApp } = await import('firebase/app')
-  const { getMessaging } = await import('firebase/messaging')
+  try {
+    const { initializeApp } = await import('firebase/app' as any).catch(() => ({ initializeApp: null }))
+    const { getMessaging } = await import('firebase/messaging' as any).catch(() => ({ getMessaging: null }))
 
-  firebaseApp = initializeApp(firebaseConfig)
-  messagingInstance = getMessaging(firebaseApp)
+    if (!initializeApp || !getMessaging) return null
 
-  return { messaging: messagingInstance }
+    if (!firebaseApp) {
+      firebaseApp = initializeApp(firebaseConfig)
+    }
+    messagingInstance = getMessaging(firebaseApp)
+
+    return { messaging: messagingInstance }
+  } catch {
+    return null
+  }
 }
 
 let currentFcmToken: string | null = null
 
 // ─── Helper: ensure service worker is registered ───
-// This prevents the hang on navigator.serviceWorker.ready when no SW exists.
 
 async function ensureServiceWorker(): Promise<ServiceWorkerRegistration | null> {
   if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return null
 
   try {
-    // First check if there's already a registration
     const existing = await navigator.serviceWorker.getRegistrations()
     if (existing.length > 0) return existing[0]
 
-    // No SW registered — register the FCM service worker now
     const reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' })
-    // Wait for it to become active
     if (reg.active) return reg
 
-    // Wait for activation with a timeout (don't hang forever)
     return await new Promise((resolve) => {
       const timeout = setTimeout(() => resolve(reg), 5000)
       reg.addEventListener('activate', () => {
         clearTimeout(timeout)
         resolve(reg)
       })
-      // Also listen for installation completion
       if (reg.installing) {
         reg.installing.addEventListener('statechange', () => {
           if (reg.active) {
@@ -83,11 +85,9 @@ async function ensureServiceWorker(): Promise<ServiceWorkerRegistration | null> 
 async function waitForServiceWorkerReady(timeoutMs = 5000): Promise<ServiceWorkerRegistration | null> {
   if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return null
 
-  // Try to ensure a SW is registered first
   const reg = await ensureServiceWorker()
   if (!reg) return null
 
-  // Now wait for .ready (should resolve quickly since we just ensured registration)
   try {
     return await Promise.race([
       navigator.serviceWorker.ready,
@@ -149,13 +149,15 @@ export function useFcm(onForegroundMessage?: (payload: any) => void): UseFcmResu
 
     let unsubscribe: (() => void) | null = null
 
-    getMessaging()
-      .then(async ({ messaging }: any) => {
-        if (onMessageRef.current) {
-          const { onMessage } = await import('firebase/messaging')
-          unsubscribe = onMessage(messaging, (payload: any) => {
-            onMessageRef.current?.(payload)
-          })
+    getMessagingInstance()
+      .then(async (res) => {
+        if (res?.messaging && onMessageRef.current) {
+          const { onMessage } = await import('firebase/messaging' as any).catch(() => ({ onMessage: null }))
+          if (onMessage) {
+            unsubscribe = onMessage(res.messaging, (payload: any) => {
+              onMessageRef.current?.(payload)
+            })
+          }
         }
       })
       .catch(() => {})
@@ -179,7 +181,6 @@ export function useFcm(onForegroundMessage?: (payload: any) => void): UseFcmResu
     setState((prev) => ({ ...prev, loading: true, error: null }))
 
     try {
-      // 1. Request notification permission
       const permission = await Notification.requestPermission()
       setState((prev) => ({ ...prev, permission }))
 
@@ -188,7 +189,6 @@ export function useFcm(onForegroundMessage?: (payload: any) => void): UseFcmResu
         return false
       }
 
-      // 2. Ensure service worker is registered (with timeout — no hanging)
       const swReg = await waitForServiceWorkerReady(5000)
       if (!swReg) {
         setState((prev) => ({
@@ -199,11 +199,19 @@ export function useFcm(onForegroundMessage?: (payload: any) => void): UseFcmResu
         return false
       }
 
-      // 3. Get FCM token
-      const { getToken } = await import('firebase/messaging')
-      const { messaging } = await getMessaging()
+      const fcmPkg = await import('firebase/messaging' as any).catch(() => null)
+      const res = await getMessagingInstance()
 
-      const token = await getToken(messaging, {
+      if (!fcmPkg?.getToken || !res?.messaging) {
+        setState((prev) => ({
+          ...prev,
+          loading: false,
+          error: 'Failed to initialize FCM messaging service.',
+        }))
+        return false
+      }
+
+      const token = await fcmPkg.getToken(res.messaging, {
         vapidKey,
         serviceWorkerRegistration: swReg,
       })
@@ -217,7 +225,6 @@ export function useFcm(onForegroundMessage?: (payload: any) => void): UseFcmResu
         return false
       }
 
-      // 4. Register token with backend
       const oldToken = currentFcmToken
       if (oldToken && oldToken !== token) {
         await api.patch('/profile/fcm-token/remove', { token: oldToken }).catch(() => {})
@@ -300,10 +307,12 @@ export async function initFcmTokenRefresh() {
       const swReg = await waitForServiceWorkerReady(3000)
       if (!swReg) return
 
-      const { getToken } = await import('firebase/messaging')
-      const { messaging } = await getMessaging()
+      const fcmPkg = await import('firebase/messaging' as any).catch(() => null)
+      const res = await getMessagingInstance()
 
-      const token = await getToken(messaging, {
+      if (!fcmPkg?.getToken || !res?.messaging) return
+
+      const token = await fcmPkg.getToken(res.messaging, {
         vapidKey,
         serviceWorkerRegistration: swReg,
       })

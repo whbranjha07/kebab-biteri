@@ -5,7 +5,7 @@ import { Coupon } from '../schemas'
 
 @Injectable()
 export class CouponsService {
-  constructor(@InjectModel(Coupon.name) private couponModel: Model<Coupon>) {}
+  constructor(@InjectModel('Coupon') private couponModel: Model<Coupon>) {}
 
   async validate(dto: { code: string; subtotal: number }) {
     const coupon = await this.couponModel.findOne({ code: dto.code, isActive: true }).lean()

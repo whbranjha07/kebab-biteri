@@ -16,7 +16,7 @@ export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name)
 
   constructor(
-    @InjectModel(Order.name) private orderModel: Model<Order>,
+    @InjectModel('Order') private orderModel: Model<Order>,
     private wsGateway: WebsocketGateway,
     private notificationsService: NotificationsService,
   ) {}

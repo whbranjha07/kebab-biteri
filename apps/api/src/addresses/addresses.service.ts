@@ -5,7 +5,7 @@ import { Address } from '../schemas'
 
 @Injectable()
 export class AddressesService {
-  constructor(@InjectModel(Address.name) private addressModel: Model<Address>) {}
+  constructor(@InjectModel('Address') private addressModel: Model<Address>) {}
 
   async findAll(userId: string) {
     return this.addressModel.find({ userId: new Types.ObjectId(userId) }).sort({ isDefault: -1 }).lean()

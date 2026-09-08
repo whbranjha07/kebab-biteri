@@ -1,16 +1,16 @@
 import { Module } from '@nestjs/common'
 import { MongooseModule } from '@nestjs/mongoose'
 import {
-  User, UserSchema,
-  Category, CategorySchema,
-  Product, ProductSchema,
-  Branch, BranchSchema,
-  Promotion, PromotionSchema,
-  Order, OrderSchema,
-  Coupon, CouponSchema,
-  Address, AddressSchema,
-  Notification, NotificationSchema,
-  StoreSettings, StoreSettingsSchema,
+  UserSchema,
+  CategorySchema,
+  ProductSchema,
+  BranchSchema,
+  PromotionSchema,
+  OrderSchema,
+  CouponSchema,
+  AddressSchema,
+  NotificationSchema,
+  StoreSettingsSchema,
 } from '../schemas'
 
 const DB_URL = process.env.DATABASE_URL || 'mongodb://localhost:27017/kebab-biteri'
@@ -19,16 +19,16 @@ const DB_URL = process.env.DATABASE_URL || 'mongodb://localhost:27017/kebab-bite
   imports: [
     MongooseModule.forRoot(DB_URL),
     MongooseModule.forFeature([
-      { name: User.name, schema: UserSchema },
-      { name: Category.name, schema: CategorySchema },
-      { name: Product.name, schema: ProductSchema },
-      { name: Branch.name, schema: BranchSchema },
-      { name: Promotion.name, schema: PromotionSchema },
-      { name: Order.name, schema: OrderSchema },
-      { name: Coupon.name, schema: CouponSchema },
-      { name: Address.name, schema: AddressSchema },
-      { name: Notification.name, schema: NotificationSchema },
-      { name: StoreSettings.name, schema: StoreSettingsSchema },
+      { name: 'User', schema: UserSchema },
+      { name: 'Category', schema: CategorySchema },
+      { name: 'Product', schema: ProductSchema },
+      { name: 'Branch', schema: BranchSchema },
+      { name: 'Promotion', schema: PromotionSchema },
+      { name: 'Order', schema: OrderSchema },
+      { name: 'Coupon', schema: CouponSchema },
+      { name: 'Address', schema: AddressSchema },
+      { name: 'Notification', schema: NotificationSchema },
+      { name: 'StoreSettings', schema: StoreSettingsSchema },
     ]),
   ],
   exports: [MongooseModule],

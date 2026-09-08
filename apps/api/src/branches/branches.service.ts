@@ -5,7 +5,7 @@ import { Branch } from '../schemas'
 
 @Injectable()
 export class BranchesService {
-  constructor(@InjectModel(Branch.name) private branchModel: Model<Branch>) {}
+  constructor(@InjectModel('Branch') private branchModel: Model<Branch>) {}
 
   async findAll() {
     return this.branchModel.find({ isActive: true }).sort({ name: 1 }).lean()

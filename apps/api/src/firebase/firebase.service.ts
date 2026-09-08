@@ -1,25 +1,19 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
-import * as admin from 'firebase-admin'
-import { getMessaging, Messaging, MulticastMessage } from 'firebase-admin/messaging'
 
-/**
- * Firebase Admin service — initialized once at startup.
- *
- * Credentials are read from environment variables (never from a committed JSON file):
- *   FIREBASE_PROJECT_ID
- *   FIREBASE_CLIENT_EMAIL
- *   FIREBASE_PRIVATE_KEY  (use \n escapes in .env)
- *
- * If credentials are missing the service starts in "disabled" mode:
- *   - sendMulticast() becomes a no-op that returns empty results.
- *   - The rest of the backend continues to work normally (Socket.IO, REST, DB).
- *   - A warning is logged so the developer knows push notifications are inactive.
- */
+let admin: any = null
+let getMessaging: any = null
+try {
+  admin = require('firebase-admin')
+  getMessaging = require('firebase-admin/messaging').getMessaging
+} catch (e) {
+  // firebase-admin is optional
+}
+
 @Injectable()
 export class FirebaseService implements OnModuleInit {
   private readonly logger = new Logger(FirebaseService.name)
-  private app: admin.App | null = null
-  private messaging: Messaging | null = null
+  private app: any = null
+  private messaging: any = null
   private initialized = false
 
   onModuleInit() {
@@ -31,17 +25,14 @@ export class FirebaseService implements OnModuleInit {
     const clientEmail = process.env.FIREBASE_CLIENT_EMAIL
     const privateKeyRaw = process.env.FIREBASE_PRIVATE_KEY
 
-    // All three are required for a valid service-account credential
-    if (!projectId || !clientEmail || !privateKeyRaw) {
+    if (!admin || !getMessaging || !projectId || !clientEmail || !privateKeyRaw) {
       this.logger.warn(
-        'Firebase Admin not initialized — FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, or FIREBASE_PRIVATE_KEY is missing. ' +
-          'Push notifications will be disabled. Set these in .env to enable FCM.',
+        'Firebase Admin not initialized — FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, or FIREBASE_PRIVATE_KEY is missing or firebase-admin is not installed. Push notifications will be disabled.',
       )
       return
     }
 
     try {
-      // Support both raw newlines and \n escape sequences in .env
       const privateKey = privateKeyRaw.replace(/\\n/g, '\n')
 
       this.app = admin.initializeApp({
@@ -64,11 +55,6 @@ export class FirebaseService implements OnModuleInit {
     return this.initialized && this.messaging !== null
   }
 
-  /**
-   * Send a push notification to one or more FCM tokens.
-   * Returns the list of tokens that were reported as invalid/unregistered
-   * so the caller can remove them from the database.
-   */
   async sendMulticast(
     tokens: string[],
     payload: {
@@ -81,7 +67,7 @@ export class FirebaseService implements OnModuleInit {
       return { invalidTokens: [], successCount: 0, failureCount: 0 }
     }
 
-    const message: MulticastMessage = {
+    const message: any = {
       notification: { title: payload.title, body: payload.body },
       data: payload.data ?? {},
       tokens,
@@ -107,13 +93,12 @@ export class FirebaseService implements OnModuleInit {
     }
 
     try {
-      const response = await this.messaging!.sendEachForMulticast(message)
+      const response = await this.messaging.sendEachForMulticast(message)
 
       const invalidTokens: string[] = []
-      response.responses.forEach((resp, idx) => {
+      response.responses.forEach((resp: any, idx: number) => {
         if (!resp.success && resp.error) {
           const code = resp.error.code
-          // FCM error codes that indicate the token is permanently invalid
           if (
             code === 'messaging/invalid-registration-token' ||
             code === 'messaging/registration-token-not-registered' ||

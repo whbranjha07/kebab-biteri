@@ -9,8 +9,8 @@ export class NotificationsService {
   private readonly logger = new Logger(NotificationsService.name)
 
   constructor(
-    @InjectModel(Notification.name) private notifModel: Model<Notification>,
-    @InjectModel(User.name) private userModel: Model<User>,
+    @InjectModel('Notification') private notifModel: Model<Notification>,
+    @InjectModel('User') private userModel: Model<User>,
     private firebaseService: FirebaseService,
   ) {}
 

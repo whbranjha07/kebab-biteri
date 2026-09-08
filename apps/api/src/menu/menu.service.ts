@@ -6,9 +6,9 @@ import { Category, Product, Promotion } from '../schemas'
 @Injectable()
 export class MenuService {
   constructor(
-    @InjectModel(Category.name) private categoryModel: Model<Category>,
-    @InjectModel(Product.name) private productModel: Model<Product>,
-    @InjectModel(Promotion.name) private promotionModel: Model<Promotion>,
+    @InjectModel('Category') private categoryModel: Model<Category>,
+    @InjectModel('Product') private productModel: Model<Product>,
+    @InjectModel('Promotion') private promotionModel: Model<Promotion>,
   ) {}
 
   async getMenu() {

@@ -8,7 +8,7 @@ import { User } from '../schemas'
 @Injectable()
 export class AuthService {
   constructor(
-    @InjectModel(User.name) private userModel: Model<User>,
+    @InjectModel('User') private userModel: Model<User>,
     private jwt: JwtService,
   ) {}
 
