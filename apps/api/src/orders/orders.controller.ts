@@ -22,16 +22,19 @@ export class OrdersController {
 
   @Post()
   async create(@CurrentUser() user: { userId: string }, @Body() dto: CreateOrderDto) {
+    if (!user?.userId) return { success: false, message: 'Unauthorized' }
     return this.ordersService.create(user.userId, dto)
   }
 
   @Get()
   async findAll(@CurrentUser() user: { userId: string }, @Query() query: PaginationDto) {
+    if (!user?.userId) return { data: [], total: 0 }
     return this.ordersService.findByUser(user.userId, query.page, query.limit)
   }
 
   @Get(':id')
   async findOne(@CurrentUser() user: { userId: string }, @Param('id') id: string) {
+    if (!user?.userId) return null
     return this.ordersService.findOne(user.userId, id)
   }
 

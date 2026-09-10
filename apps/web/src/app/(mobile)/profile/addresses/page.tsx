@@ -16,7 +16,10 @@ export default function AddressesPage() {
 
   const handleAdd = async (addr: SelectedAddress) => {
     try {
-      await create({ label: addr.label, street: addr.street, city: addr.city, postalCode: addr.postalCode, country: 'España', lat: addr.lat, lng: addr.lng })
+      const created = await create({ label: addr.label, street: addr.street, city: addr.city, postalCode: addr.postalCode, country: 'España', lat: addr.lat, lng: addr.lng })
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('kb_active_address', JSON.stringify(created ?? addr))
+      }
       setShowAdd(false)
     } catch (e: any) {
       // Error handled in hook

@@ -47,7 +47,12 @@ export default function AdminLoginPage() {
       )
 
       // Decode JWT token payload to strictly verify admin role
-      const token = res.tokens.accessToken
+      const token = res?.tokens?.accessToken
+      if (!token) {
+        setError('No se pudo obtener el token de acceso.')
+        setLoading(false)
+        return
+      }
       const payload = JSON.parse(atob(token.split('.')[1]))
 
       if (payload.role !== 'ADMIN' && payload.role !== 'MANAGER') {

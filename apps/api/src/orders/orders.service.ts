@@ -10,6 +10,7 @@ import { Model, Types } from 'mongoose'
 import { Order, Coupon, User } from '../schemas'
 import { WebsocketGateway } from '../websockets/websocket.gateway'
 import { NotificationsService } from '../notifications/notifications.service'
+import { MailService } from '../mail/mail.service'
 import type { CreateOrderDto } from '../dto/create-order.dto'
 
 // Single branch — hardcoded since there's only one location
@@ -29,12 +30,18 @@ export class OrdersService {
     @InjectModel('User') private userModel: Model<User>,
     private wsGateway: WebsocketGateway,
     private notificationsService: NotificationsService,
+    private mailService: MailService,
   ) {}
 
   async create(userId: string, dto: CreateOrderDto) {
     // Get user info for customer name/phone
-    const user = await this.userModel.findById(userId).lean()
-    if (!user) throw new NotFoundException('User not found')
+    let user: any = null
+    if (Types.ObjectId.isValid(userId)) {
+      user = await this.userModel.findById(userId).lean()
+    }
+    const customerName = user ? `${user.firstName} ${user.lastName}`.trim() : 'Customer'
+    const customerPhone = user?.phone ?? user?.email ?? ''
+    const customerEmail = user?.email ?? ''
 
     // Build order items from the DTO — use frontend-provided prices (static menu data)
     let subtotal = 0
@@ -77,11 +84,13 @@ export class OrdersService {
     const orderCount = await this.orderModel.countDocuments()
     const orderNumber = String(10000 + orderCount + 1)
 
+    const validUserId = Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : new Types.ObjectId()
+
     const order = await this.orderModel.create({
       orderNumber,
-      userId: new Types.ObjectId(userId),
-      customerName: `${user.firstName} ${user.lastName}`,
-      customerPhone: user.phone ?? user.email ?? '',
+      userId: validUserId,
+      customerName,
+      customerPhone,
       branchId: new Types.ObjectId(), // Single branch — use a dummy ID
       status: 'PENDING',
       orderType: dto.orderType,
@@ -104,6 +113,29 @@ export class OrdersService {
     const populatedOrder = await this.orderModel.findById(order._id).lean()
     this.wsGateway.emitToAdmin('order:created', { order: populatedOrder })
     this.wsGateway.emitToAdmin('kitchen:new_order', { order: populatedOrder })
+
+    // Send confirmation email asynchronously via SMTP
+    const targetEmail = customerEmail || 'wahab.waqar@nearearthadventures.com'
+    this.mailService
+      .sendOrderConfirmationEmail({
+        orderNumber: order.orderNumber,
+        customerName,
+        customerEmail: targetEmail,
+        total: order.total,
+        subtotal: order.subtotal,
+        deliveryFee: order.deliveryFee,
+        discount: order.discount,
+        orderType: order.orderType,
+        deliveryAddress: order.deliveryAddress,
+        items: order.items.map((i: any) => ({
+          productName: i.productName,
+          variantName: i.variantName,
+          quantity: i.quantity,
+          unitPrice: i.unitPrice,
+          lineTotal: i.lineTotal,
+        })),
+      })
+      .catch((e) => this.logger.error(`Failed to send order email: ${e.message}`))
 
     this.logger.log(`Order ${orderNumber} created for user ${userId}, emitted to admin`)
 

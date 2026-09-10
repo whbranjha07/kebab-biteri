@@ -65,7 +65,7 @@ export function DesktopHeader() {
   )
   return (
     <>
-      <header className="hidden lg:flex sticky top-0 z-30 items-center justify-between bg-white/95 px-8 py-3.5 backdrop-blur-md border-b border-amber-200 shadow-xs">
+      <header className="hidden lg:flex sticky top-0 z-50 items-center justify-between bg-white/95 px-8 py-3.5 backdrop-blur-md border-b border-amber-200 shadow-xs">
         {/* Search Input with Live Dropdown */}
         <div ref={searchRef} className="relative w-96">
           <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-400 z-10" />

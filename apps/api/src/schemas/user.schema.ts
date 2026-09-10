@@ -51,6 +51,39 @@ export class User {
   @Prop({ type: [FcmTokenEntrySchema], default: [] })
   fcmTokens: FcmTokenEntry[]
 
+  @Prop({ default: false })
+  emailVerified: boolean
+
+  @Prop()
+  emailVerificationTokenHash: string
+
+  @Prop()
+  emailVerificationExpiresAt: Date
+
+  @Prop()
+  emailVerificationLastSentAt: Date
+
+  @Prop()
+  passwordResetTokenHash: string
+
+  @Prop()
+  passwordResetExpiresAt: Date
+
+  @Prop()
+  passwordResetLastSentAt: Date
+
+  @Prop()
+  loginOtpHash: string
+
+  @Prop()
+  loginOtpExpiresAt: Date
+
+  @Prop()
+  loginOtpLastSentAt: Date
+
+  @Prop({ default: 0 })
+  loginOtpAttempts: number
+
   @Prop({ default: true })
   isActive: boolean
 

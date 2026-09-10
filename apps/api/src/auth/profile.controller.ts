@@ -1,7 +1,7 @@
 import { Controller, Get, Patch, Body, UseGuards, Request } from '@nestjs/common'
 import { JwtAuthGuard } from '../common/jwt-auth.guard'
 import { InjectModel } from '@nestjs/mongoose'
-import { Model } from 'mongoose'
+import { Model, Types } from 'mongoose'
 import { User } from '../schemas'
 import { NotificationsService } from '../notifications/notifications.service'
 
@@ -15,7 +15,11 @@ export class ProfileController {
 
   @Get()
   async getProfile(@Request() req: any) {
-    const user = await this.userModel.findById(req.user.userId).lean()
+    const userId = req.user?.userId
+    if (!userId || !Types.ObjectId.isValid(userId)) {
+      return { user: null }
+    }
+    const user = await this.userModel.findById(userId).lean()
     if (!user) return { user: null }
     return {
       user: {
@@ -28,6 +32,24 @@ export class ProfileController {
         hasFcmTokens: (user.fcmTokens?.length ?? 0) > 0 || !!user.fcmToken,
       },
     }
+  }
+
+  @Patch()
+  async updateProfile(
+    @Request() req: any,
+    @Body() body: { firstName?: string; lastName?: string; themePreference?: string },
+  ) {
+    const userId = req.user?.userId
+    if (!userId || !Types.ObjectId.isValid(userId)) {
+      return { success: false, message: 'Invalid user' }
+    }
+    const updateData: Record<string, any> = {}
+    if (body.firstName !== undefined) updateData.firstName = body.firstName
+    if (body.lastName !== undefined) updateData.lastName = body.lastName
+    if (body.themePreference !== undefined) updateData.themePreference = body.themePreference
+
+    const updatedUser = await this.userModel.findByIdAndUpdate(userId, { $set: updateData }, { new: true }).lean()
+    return { success: true, user: updatedUser }
   }
 
   // ─── FCM Token Registration ─────────────────────────

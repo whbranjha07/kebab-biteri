@@ -8,13 +8,15 @@ import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toaster'
 import { useI18n } from '@/lib/i18n'
 import { useFcm } from '@/hooks/use-fcm'
+import { useTheme } from '@/lib/theme-provider'
 import { useAuth } from '@/hooks/use-auth'
 
 export default function SettingsPage() {
   const { locale, setLocale } = useI18n()
-  const [darkMode, setDarkMode] = useState(false)
+  const { theme, toggleTheme } = useTheme()
   const { user } = useAuth()
   const fcm = useFcm()
+  const darkMode = theme === 'dark'
 
   const handleEnableNotifications = async () => {
     if (!user) {
@@ -175,7 +177,7 @@ export default function SettingsPage() {
                 {locale === 'es-ES' ? 'Modo oscuro' : 'Dark mode'}
               </span>
               <button
-                onClick={() => setDarkMode(!darkMode)}
+                onClick={toggleTheme}
                 className={cn(
                   'relative h-6 w-11 rounded-full transition-colors',
                   darkMode ? 'bg-primary' : 'bg-border',

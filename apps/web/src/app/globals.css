@@ -23,6 +23,108 @@
     overscroll-behavior-y: none;
   }
 
+  .dark body {
+    @apply bg-zinc-950 text-zinc-100;
+  }
+
+  html.dark {
+    color-scheme: dark;
+    background-color: #09090b;
+  }
+
+  html.dark body {
+    background-color: #09090b;
+    color: #f4f4f5;
+  }
+
+  /* Global Dark Mode Surface & Text Overrides */
+  html.dark header, 
+  html.dark nav, 
+  html.dark aside,
+  html.dark footer,
+  html.dark div,
+  html.dark section,
+  html.dark article,
+  html.dark main {
+    border-color: #27272a;
+  }
+
+  html.dark .bg-white,
+  html.dark .bg-surface,
+  html.dark .bg-surface-alt,
+  html.dark .bg-amber-50,
+  html.dark .bg-amber-100 {
+    background-color: #18181b !important;
+    color: #f4f4f5 !important;
+    border-color: #27272a !important;
+  }
+
+  html.dark .card-app,
+  html.dark input,
+  html.dark textarea,
+  html.dark select,
+  html.dark [role="dialog"] {
+    background-color: #18181b !important;
+    color: #f4f4f5 !important;
+    border-color: #27272a !important;
+  }
+
+  /* Exclude dark text overrides inside dark gradient cards (like PwaQrCard) */
+  html.dark .from-charcoal-900,
+  html.dark .from-charcoal-900 * {
+    color: #ffffff !important;
+  }
+
+  html.dark .text-zinc-950,
+  html.dark .text-zinc-900,
+  html.dark .text-zinc-800,
+  html.dark .text-zinc-700,
+  html.dark .text-amber-950,
+  html.dark .text-amber-900,
+  html.dark .text-amber-800,
+  html.dark .text-charcoal {
+    color: #f4f4f5 !important;
+  }
+
+  html.dark .text-zinc-600,
+  html.dark .text-zinc-500,
+  html.dark .text-muted,
+  html.dark .text-subtle {
+    color: #a1a1aa !important;
+  }
+
+  html.dark input::placeholder,
+  html.dark textarea::placeholder {
+    color: #71717a !important;
+  }
+
+  html.dark .border-amber-100,
+  html.dark .border-amber-200,
+  html.dark .border-amber-300,
+  html.dark .border-border {
+    border-color: #27272a !important;
+  }
+
+  /* Keep brand primary yellow/gold accents intact with high contrast dark text */
+  html.dark .bg-\[\#F4BE2C\] {
+    background-color: #F4BE2C !important;
+    color: #09090b !important;
+  }
+
+  html.dark .bg-\[\#F4BE2C\] h2,
+  html.dark .bg-\[\#F4BE2C\] h3,
+  html.dark .bg-\[\#F4BE2C\] p,
+  html.dark .bg-\[\#F4BE2C\] span,
+  html.dark .bg-\[\#F4BE2C\] a,
+  html.dark .bg-\[\#F4BE2C\] svg {
+    color: #09090b !important;
+  }
+
+  html.dark .bg-\[\#F4BE2C\] .text-zinc-800,
+  html.dark .bg-\[\#F4BE2C\] .text-zinc-700 {
+    color: #27272a !important;
+  }
+
   html, body {
     overscroll-behavior: none;
   }
@@ -30,7 +132,7 @@
 
 @layer components {
   .app-shell {
-    @apply mx-auto min-h-dvh w-full max-w-none md:max-w-6xl xl:max-w-7xl bg-[#FFFDF2] shadow-2xl relative border-x border-amber-100/50;
+    @apply mx-auto min-h-dvh w-full max-w-none md:max-w-6xl xl:max-w-7xl bg-[#FFFDF2] dark:bg-zinc-950 shadow-2xl relative border-x border-amber-100/50 dark:border-zinc-800;
   }
 
   .app-container {

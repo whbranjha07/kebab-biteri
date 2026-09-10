@@ -14,6 +14,7 @@ import { WebsocketModule } from './websockets/websocket.module'
 import { DeliveryModule } from './delivery/delivery.module'
 import { NotificationsModule } from './notifications/notifications.module'
 import { FirebaseModule } from './firebase/firebase.module'
+import { MailModule } from './mail/mail.module'
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { FirebaseModule } from './firebase/firebase.module'
     ThrottlerModule.forRoot([
       { ttl: 60000, limit: 100 },
     ]),
+    MailModule,
     FirebaseModule,
     DatabaseModule,
     AuthModule,

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
 import { Search, Star, Plus, ChevronLeft } from 'lucide-react'
@@ -242,6 +243,7 @@ function ProductRow({
   product: Product & { isNew?: boolean; number?: number; priceUnit?: string }
   onAdd: () => void
 }) {
+  const router = useRouter()
   const hasCustomization = product.variants.length > 0 || product.modifiers.length > 0
 
   return (
@@ -286,7 +288,7 @@ function ProductRow({
             onClick={(e) => {
               e.preventDefault()
               if (hasCustomization) {
-                window.location.href = `/product/${product.slug}`
+                router.push(`/product/${product.slug}`)
               } else {
                 onAdd()
               }

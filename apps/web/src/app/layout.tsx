@@ -50,7 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="mobile-web-app-capable" content="yes" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
-      <body className="font-sans bg-[#FFFDF2] text-zinc-950 antialiased">
+      <body className="font-sans bg-[#FFFDF2] text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50 antialiased">
         <Providers>
           {children}
           <ServiceWorkerRegister />

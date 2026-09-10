@@ -14,6 +14,7 @@ export default function ProfilePage() {
   const { user, loading, logout } = useAuth()
   const { t, locale, setLocale } = useI18n()
   const [showSettingsModal, setShowSettingsModal] = useState(false)
+  const [settingsTab, setSettingsTab] = useState<'all' | 'language' | 'notifications'>('all')
   const [notificationsEnabled, setNotificationsEnabled] = useState(true)
 
   const menuSections = [
@@ -21,16 +22,16 @@ export default function ProfilePage() {
       title: t('profile.account'),
       items: [
         { icon: Package, label: t('profile.myOrders'), href: '/orders' },
-        { icon: MapPin, label: t('profile.myAddresses'), href: '/orders' },
-        { icon: Heart, label: t('profile.favorites'), href: '/menu' },
+        { icon: MapPin, label: t('profile.myAddresses'), href: '/profile/addresses' },
+        { icon: Heart, label: t('profile.favorites'), href: '/favorites' },
       ],
     },
     {
       title: t('profile.preferences'),
       items: [
-        { icon: Bell, label: t('profile.notifications'), onClick: () => setShowSettingsModal(true) },
-        { icon: Globe, label: t('profile.language'), onClick: () => setShowSettingsModal(true) },
-        { icon: Settings, label: t('profile.settings'), onClick: () => setShowSettingsModal(true) },
+        { icon: Bell, label: t('profile.notifications'), href: '/profile/notifications' },
+        { icon: Globe, label: t('profile.language'), onClick: () => { setShowSettingsModal(true); setSettingsTab('language') } },
+        { icon: Settings, label: t('profile.settings'), href: '/profile/settings' },
       ],
     },
     {
@@ -144,8 +145,10 @@ export default function ProfilePage() {
             <div className="relative z-10 w-full max-w-md rounded-3xl bg-white p-6 shadow-2xl border border-amber-300 space-y-5" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center justify-between border-b border-amber-200 pb-3">
                 <div className="flex items-center gap-2">
-                  <Settings className="h-5 w-5 text-[#D99F16]" />
-                  <h2 className="font-sans text-xl font-black text-zinc-950">{t('profile.settings')}</h2>
+                  {settingsTab === 'language' ? <Globe className="h-5 w-5 text-[#D99F16]" /> : <Settings className="h-5 w-5 text-[#D99F16]" />}
+                  <h2 className="font-sans text-xl font-black text-zinc-950">
+                    {settingsTab === 'language' ? t('profile.language') : t('profile.settings')}
+                  </h2>
                 </div>
                 <button onClick={() => setShowSettingsModal(false)} className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-amber-100">
                   <X className="h-5 w-5 text-zinc-950" />
@@ -153,50 +156,54 @@ export default function ProfilePage() {
               </div>
 
               {/* Language Selection Setting */}
-              <div className="space-y-2">
-                <label className="text-xs font-black uppercase text-zinc-600">{t('profile.language')}</label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => {
-                      setLocale('es-ES')
-                      toast.success('Idioma cambiado a Español 🇪🇸')
-                    }}
-                    className={`flex items-center justify-between rounded-2xl border p-3 text-xs font-black transition-all ${locale === 'es-ES' ? 'border-[#F4BE2C] bg-[#FFFDF0] text-zinc-950 shadow-sm' : 'border-amber-200 bg-white text-zinc-600'}`}
-                  >
-                    <span>Español 🇪🇸</span>
-                    {locale === 'es-ES' && <Check className="h-4 w-4 text-[#D99F16]" />}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setLocale('en-US')
-                      toast.success('Language switched to English 🇬🇧')
-                    }}
-                    className={`flex items-center justify-between rounded-2xl border p-3 text-xs font-black transition-all ${locale === 'en-US' ? 'border-[#F4BE2C] bg-[#FFFDF0] text-zinc-950 shadow-sm' : 'border-amber-200 bg-white text-zinc-600'}`}
-                  >
-                    <span>English 🇬🇧</span>
-                    {locale === 'en-US' && <Check className="h-4 w-4 text-[#D99F16]" />}
-                  </button>
+              {(settingsTab === 'all' || settingsTab === 'language') && (
+                <div className="space-y-2">
+                  <label className="text-xs font-black uppercase text-zinc-600">{t('profile.language')}</label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => {
+                        setLocale('es-ES')
+                        toast.success('Idioma cambiado a Español 🇪🇸')
+                      }}
+                      className={`flex items-center justify-between rounded-2xl border p-3 text-xs font-black transition-all ${locale === 'es-ES' ? 'border-[#F4BE2C] bg-[#FFFDF0] text-zinc-950 shadow-sm' : 'border-amber-200 bg-white text-zinc-600'}`}
+                    >
+                      <span>Español 🇪🇸</span>
+                      {locale === 'es-ES' && <Check className="h-4 w-4 text-[#D99F16]" />}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setLocale('en-US')
+                        toast.success('Language switched to English 🇬🇧')
+                      }}
+                      className={`flex items-center justify-between rounded-2xl border p-3 text-xs font-black transition-all ${locale === 'en-US' ? 'border-[#F4BE2C] bg-[#FFFDF0] text-zinc-950 shadow-sm' : 'border-amber-200 bg-white text-zinc-600'}`}
+                    >
+                      <span>English 🇬🇧</span>
+                      {locale === 'en-US' && <Check className="h-4 w-4 text-[#D99F16]" />}
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Push Notifications Toggle Setting */}
-              <div className="space-y-2 pt-2 border-t border-amber-100">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-black text-zinc-950">{t('profile.notifications')}</p>
-                    <p className="text-xs font-semibold text-zinc-500">Notificaciones de estado del pedido en tiempo real</p>
+              {(settingsTab === 'all' || settingsTab === 'notifications') && (
+                <div className="space-y-2 pt-2 border-t border-amber-100">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-black text-zinc-950">{t('profile.notifications')}</p>
+                      <p className="text-xs font-semibold text-zinc-500">Notificaciones de estado del pedido en tiempo real</p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setNotificationsEnabled(!notificationsEnabled)
+                        toast.success(!notificationsEnabled ? 'Notificaciones activadas 🔔' : 'Notificaciones desactivadas 🔕')
+                      }}
+                      className={`flex h-7 w-12 items-center rounded-full p-1 transition-colors ${notificationsEnabled ? 'bg-[#F4BE2C]' : 'bg-zinc-300'}`}
+                    >
+                      <div className={`h-5 w-5 rounded-full bg-white shadow-md transition-transform ${notificationsEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                    </button>
                   </div>
-                  <button
-                    onClick={() => {
-                      setNotificationsEnabled(!notificationsEnabled)
-                      toast.success(!notificationsEnabled ? 'Notificaciones activadas 🔔' : 'Notificaciones desactivadas 🔕')
-                    }}
-                    className={`flex h-7 w-12 items-center rounded-full p-1 transition-colors ${notificationsEnabled ? 'bg-[#F4BE2C]' : 'bg-zinc-300'}`}
-                  >
-                    <div className={`h-5 w-5 rounded-full bg-white shadow-md transition-transform ${notificationsEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
-                  </button>
                 </div>
-              </div>
+              )}
 
               {/* Close Button */}
               <Button size="lg" fullWidth onClick={() => setShowSettingsModal(false)} className="mt-4 font-black">

@@ -54,7 +54,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="min-h-dvh bg-surface-alt">
+    <div className="min-h-dvh bg-surface-alt dark:bg-zinc-950 dark:text-zinc-50">
       <AdminSidebar />
       <div className="flex flex-1 flex-col lg:ml-64">
         <AdminHeader />

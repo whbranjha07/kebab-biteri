@@ -185,7 +185,7 @@ export function useFcm(onForegroundMessage?: (payload: any) => void): UseFcmResu
       setState((prev) => ({ ...prev, permission }))
 
       if (permission !== 'granted') {
-        setState((prev) => ({ ...prev, loading: false, enabled: false }))
+        setState((prev) => ({ ...prev, loading: false, enabled: false, error: 'Notification permission denied in browser.' }))
         return false
       }
 
@@ -203,10 +203,17 @@ export function useFcm(onForegroundMessage?: (payload: any) => void): UseFcmResu
       const res = await getMessagingInstance()
 
       if (!fcmPkg?.getToken || !res?.messaging) {
+        console.warn('[FCM] Firebase Messaging Web SDK missing or uninitialized.', {
+          hasApiKey: Boolean(firebaseConfig.apiKey),
+          hasProjectId: Boolean(firebaseConfig.projectId),
+          hasVapidKey: Boolean(vapidKey),
+        })
         setState((prev) => ({
           ...prev,
           loading: false,
-          error: 'Failed to initialize FCM messaging service.',
+          error: !firebaseConfig.apiKey || !vapidKey
+            ? 'Firebase Web configuration incomplete. Please add NEXT_PUBLIC_FIREBASE_API_KEY and NEXT_PUBLIC_FIREBASE_VAPID_KEY in .env file.'
+            : 'Failed to initialize FCM messaging service.',
         }))
         return false
       }

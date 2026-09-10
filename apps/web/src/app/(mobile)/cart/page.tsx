@@ -20,10 +20,9 @@ export default function CartPage() {
 
   const subtotal = items.reduce((sum, i) => sum + i.lineTotal, 0)
   const isFreeDelivery = subtotal >= MIN_ORDER_AMOUNT
-  const under11Difference = isFreeDelivery ? 0 : MIN_ORDER_AMOUNT - subtotal
   const deliveryFee = subtotal > 0 ? (isFreeDelivery ? 0 : STANDARD_DELIVERY_FEE) : 0
   const discount = 0
-  const total = subtotal + under11Difference + deliveryFee - discount
+  const total = subtotal + deliveryFee - discount
 
   if (items.length === 0) {
     return (
@@ -90,13 +89,8 @@ export default function CartPage() {
                   </p>
                   <p className="text-xs font-bold text-amber-900 leading-relaxed">
                     {locale === 'es-ES'
-                      ? `Para tramitar tu pedido por debajo de 11,00€, se incluye un recargo de ${formatPrice(under11Difference)} para alcanzar el mínimo de 11,00€ + ${formatPrice(STANDARD_DELIVERY_FEE)} de gastos de envío.`
-                      : `To complete an order under €11.00, a difference charge of ${formatPrice(under11Difference)} is added to meet the €11.00 minimum + ${formatPrice(STANDARD_DELIVERY_FEE)} delivery fee.`}
-                  </p>
-                  <p className="text-[11px] font-black text-[#E50909] mt-1">
-                    {locale === 'es-ES'
-                      ? `💡 ¡Añade ${formatPrice(under11Difference)} más en productos para conseguir ENVÍO GRATIS!`
-                      : `💡 Add ${formatPrice(under11Difference)} more food items for FREE delivery!`}
+                      ? `Añade más productos a tu carrito para conseguir ENVÍO GRATIS a partir de 11,00€ + ${formatPrice(STANDARD_DELIVERY_FEE)} de envío.`
+                      : `Add more food items to your cart to get FREE delivery on orders over €11.00 + ${formatPrice(STANDARD_DELIVERY_FEE)} delivery fee.`}
                   </p>
                 </div>
               </div>
@@ -180,37 +174,9 @@ export default function CartPage() {
               <span className="font-black text-zinc-950">{formatPrice(subtotal)}</span>
             </div>
             
-            {!isFreeDelivery && (
-              <div className="flex justify-between text-amber-900">
-                <span className="font-semibold">Recargo por pedido &lt; 11,00€</span>
-                <span className="font-black">+{formatPrice(under11Difference)}</span>
-              </div>
-            )}
-
-            <div className="flex justify-between">
-              <span className="font-semibold text-zinc-600">{t('cart.deliveryFee')}</span>
-              {isFreeDelivery ? (
-                <span className="font-black text-emerald-700">GRATIS / FREE</span>
-              ) : (
-                <span className="font-black text-zinc-950">+{formatPrice(deliveryFee)}</span>
-              )}
-            </div>
-
-            {discount > 0 && (
-              <div className="flex justify-between text-emerald-700">
-                <span className="font-semibold">{t('cart.discount')}</span>
-                <span className="font-black">-{formatPrice(discount)}</span>
-              </div>
-            )}
-
             <div className="border-t border-amber-300/80 pt-2.5 flex justify-between items-center">
               <div>
                 <span className="font-black text-zinc-950 text-base">Total a Pagar</span>
-                {!isFreeDelivery && (
-                  <p className="text-[10px] font-bold text-amber-800">
-                    (11,00€ mínimo + 2,50€ envío)
-                  </p>
-                )}
               </div>
               <span className="font-sans text-2xl font-black text-zinc-950">{formatPrice(total)}</span>
             </div>
@@ -219,7 +185,7 @@ export default function CartPage() {
       </div>
 
       {/* Sticky checkout CTA */}
-      <div className="fixed bottom-0 right-0 left-0 lg:left-64 z-30 app-container border-t border-amber-200 bg-white/95 p-4 backdrop-blur-lg safe-bottom pb-[calc(1rem+env(safe-area-inset-bottom))]">
+      <div className="fixed bottom-0 right-0 left-0 lg:left-64 z-30 app-container border-t border-amber-200 bg-white/95 p-4 backdrop-blur-lg safe-bottom pb-[calc(1rem+env(safe-area-inset-bottom)+3.5rem)] lg:pb-[calc(1rem+env(safe-area-inset-bottom))]">
         <Button size="xl" fullWidth onClick={() => router.push('/checkout')} className="font-black">
           {t('cart.checkout')} · {formatPrice(total)}
         </Button>

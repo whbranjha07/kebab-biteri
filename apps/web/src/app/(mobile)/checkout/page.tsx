@@ -43,13 +43,23 @@ export default function CheckoutPage() {
 
   useState(() => {
     setIsLoggedIn(!!getAccessToken())
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('kb_active_address')
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved)
+          if (parsed.street) {
+            setAddress(`${parsed.street}, ${parsed.city ?? ''} ${parsed.postalCode ?? ''}`.trim())
+          }
+        } catch {}
+      }
+    }
   })
 
   const subtotal = items.reduce((sum, i) => sum + i.lineTotal, 0)
   const isFreeDelivery = subtotal >= MIN_FREE_DELIVERY || orderType === 'PICKUP'
-  const under11Difference = (orderType === 'DELIVERY' && subtotal < MIN_FREE_DELIVERY) ? (MIN_FREE_DELIVERY - subtotal) : 0
   const deliveryFee = orderType === 'DELIVERY' ? (subtotal >= MIN_FREE_DELIVERY ? 0 : STANDARD_DELIVERY_FEE) : 0
-  const total = subtotal + under11Difference + deliveryFee
+  const total = subtotal + deliveryFee
 
   if (isLoggedIn === false) {
     return (
@@ -81,8 +91,9 @@ export default function CheckoutPage() {
   }
 
   const handlePlaceOrder = async () => {
-    if (orderType === 'DELIVERY' && !address.trim()) {
-      toast.error(locale === 'es-ES' ? 'Por favor introduce la dirección de entrega' : 'Please enter a delivery address')
+    if (!isLoggedIn) {
+      toast.error(locale === 'es-ES' ? 'Inicia sesión para completar tu pedido' : 'Please login to complete your order')
+      router.push('/profile/login?redirect=/checkout')
       return
     }
     if (!name.trim()) {
@@ -90,7 +101,11 @@ export default function CheckoutPage() {
       return
     }
     if (!phone.trim()) {
-      toast.error(locale === 'es-ES' ? 'Por favor introduce tu teléfono' : 'Please enter your phone number')
+      toast.error(locale === 'es-ES' ? 'Por favor introduce un teléfono de contacto válido' : 'Please enter a valid contact phone number')
+      return
+    }
+    if (orderType === 'DELIVERY' && !address.trim()) {
+      toast.error(locale === 'es-ES' ? 'Por favor introduce la dirección de entrega completa' : 'Please enter a complete delivery address')
       return
     }
 
@@ -110,9 +125,6 @@ export default function CheckoutPage() {
 
       // Always format notes in Spanish for the admin kitchen view
       let fullNotes = `Cliente: ${name}, Teléfono: ${phone}`
-      if (under11Difference > 0) {
-        fullNotes += ` | Recargo mínimo <11€: ${formatPrice(under11Difference)}`
-      }
       if (notes.trim()) {
         fullNotes += ` | Notas: ${notes.trim()}`
       }
@@ -198,7 +210,7 @@ export default function CheckoutPage() {
                 </button>
               </div>
 
-              {/* Delivery Fee & Under 11 Notice Box */}
+              {/* Delivery Fee Notice Box */}
               {orderType === 'DELIVERY' && (
                 <div className="mt-3 rounded-2xl p-3.5 border border-amber-300 bg-amber-50/90 text-xs shadow-2xs">
                   {subtotal >= MIN_FREE_DELIVERY ? (
@@ -207,20 +219,13 @@ export default function CheckoutPage() {
                       <span>{t('cart.freeDeliveryUnlocked')}</span>
                     </div>
                   ) : (
-                    <div className="flex items-start gap-2.5 text-amber-950 font-bold">
-                      <AlertCircle className="h-4 w-4 text-[#E50909] shrink-0 mt-0.5" />
-                      <div className="space-y-1">
-                        <p className="font-black text-zinc-950">
-                          {locale === 'es-ES'
-                            ? `Subtotal comida: ${formatPrice(subtotal)} (Mínimo requerido 11,00€)`
-                            : `Food Subtotal: ${formatPrice(subtotal)} (Minimum requirement €11.00)`}
-                        </p>
-                        <p className="text-[11px] font-semibold text-amber-900">
-                          {locale === 'es-ES'
-                            ? `Se añade un recargo de ${formatPrice(under11Difference)} para completar los 11,00€ + ${formatPrice(STANDARD_DELIVERY_FEE)} de envío.`
-                            : `Difference charge of ${formatPrice(under11Difference)} is added to reach €11.00 minimum + ${formatPrice(STANDARD_DELIVERY_FEE)} delivery fee.`}
-                        </p>
-                      </div>
+                    <div className="flex items-center gap-2 text-amber-950 font-bold">
+                      <Truck className="h-4 w-4 text-[#D99F16] shrink-0" />
+                      <span>
+                        {locale === 'es-ES'
+                          ? `Añade ${formatPrice(MIN_FREE_DELIVERY - subtotal)} más para envío GRATIS`
+                          : `Add ${formatPrice(MIN_FREE_DELIVERY - subtotal)} more for FREE delivery`}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -335,9 +340,6 @@ export default function CheckoutPage() {
             <div className="rounded-2xl bg-gradient-to-br from-[#FFFDF0] to-[#FFF9D6] border border-amber-300 p-4">
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between"><span className="font-semibold text-zinc-600">Subtotal comida</span><span className="font-black text-zinc-950">{formatPrice(subtotal)}</span></div>
-                {under11Difference > 0 && (
-                  <div className="flex justify-between text-amber-900"><span className="font-semibold">Recargo pedido &lt; 11,00€</span><span className="font-black">+{formatPrice(under11Difference)}</span></div>
-                )}
                 {orderType === 'DELIVERY' && (
                   <div className="flex justify-between">
                     <span className="font-semibold text-zinc-600">{t('cart.deliveryFee')}</span>
@@ -376,7 +378,7 @@ export default function CheckoutPage() {
       </div>
 
       {/* Sticky CTA */}
-      <div className="fixed bottom-0 right-0 left-0 lg:left-64 z-30 app-container border-t border-amber-200 bg-white/95 p-4 backdrop-blur-lg safe-bottom pb-[calc(1rem+env(safe-area-inset-bottom))]">
+      <div className="fixed bottom-0 right-0 left-0 lg:left-64 z-30 app-container border-t border-amber-200 bg-white/95 p-4 backdrop-blur-lg safe-bottom pb-[calc(1rem+env(safe-area-inset-bottom)+3.5rem)] lg:pb-[calc(1rem+env(safe-area-inset-bottom))]">
         {step < 2 ? (
           <Button size="xl" fullWidth onClick={() => {
             if (step === 0) {

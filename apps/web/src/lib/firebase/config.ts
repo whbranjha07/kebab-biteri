@@ -23,10 +23,8 @@ export const vapidKey = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY ?? ''
  */
 export function isFirebaseConfigured(): boolean {
   return Boolean(
-    firebaseConfig.apiKey &&
-      firebaseConfig.projectId &&
-      firebaseConfig.messagingSenderId &&
-      firebaseConfig.appId &&
-      vapidKey,
+    firebaseConfig.projectId ||
+      process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
+      (typeof window !== 'undefined' && 'Notification' in window)
   )
 }

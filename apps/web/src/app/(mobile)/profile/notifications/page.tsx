@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { ChevronLeft, Bell, ShoppingBag, Tag, Settings2 } from 'lucide-react'
+import { useI18n } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 
 interface NotifPref {
@@ -26,6 +27,7 @@ const initialPrefs: NotifPref[] = [
 import { useState } from 'react'
 
 export default function NotificationsPage() {
+  const { t } = useI18n()
   const [prefs, setPrefs] = useState(initialPrefs)
 
   const toggle = (id: string) => {
@@ -42,7 +44,7 @@ export default function NotificationsPage() {
           <Link href="/profile" className="touch-target -ml-2 flex items-center justify-center rounded-full">
             <ChevronLeft className="h-6 w-6 text-charcoal" />
           </Link>
-          <h1 className="font-display text-xl font-extrabold text-charcoal">Notifications</h1>
+          <h1 className="font-display text-xl font-extrabold text-charcoal">{t('profile.notifications')}</h1>
         </div>
       </header>
 

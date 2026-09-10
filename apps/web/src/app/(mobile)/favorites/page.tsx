@@ -23,6 +23,11 @@ export default function FavoritesPage() {
   const favoriteProducts = allProducts.filter((p) => favorites.includes(p.id))
 
   const handleQuickAdd = (product: Product) => {
+    if ((product.variants && product.variants.length > 0) || (product.modifiers && product.modifiers.length > 0)) {
+      toast.info(`Configura ${product.name} / Please select options`)
+      window.location.assign(`/product/${product.slug}`)
+      return
+    }
     const item: CartItem = {
       id: `ci-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
       productId: product.id,

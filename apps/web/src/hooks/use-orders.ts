@@ -72,7 +72,10 @@ export function useOrders() {
   useEffect(() => {
     fetchOrders()
 
-    // Listen for real-time status updates
+    // Poll every 10s as a background fallback in case WebSocket disconnects
+    const pollInterval = setInterval(fetchOrders, 10000)
+
+    // Listen for real-time status updates via WebSocket
     const socket = getSocket()
     if (socket) {
       socket.on('order:status', (data: { orderId: string; status: string }) => {
@@ -83,6 +86,7 @@ export function useOrders() {
     }
 
     return () => {
+      clearInterval(pollInterval)
       if (socket) socket.off('order:status')
     }
   }, [fetchOrders])

@@ -7,7 +7,7 @@ import { FcmProvider } from '@/components/fcm-provider'
 
 export default function MobileLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-dvh bg-[#FFFDF2] text-zinc-950">
+    <div className="min-h-dvh bg-[#FFFDF2] text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50">
       <OnlineStatus />
       <FcmProvider />
       

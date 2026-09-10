@@ -87,7 +87,7 @@ async function main() {
   console.log('Cleared existing data')
 
   // ─── Admin user ─────────────────────────────────
-  const adminPassword = await bcrypt.hash('admin123', 10)
+  const adminPassword = await bcrypt.hash('kebabbiteri123', 10)
   await User.create({
     email: 'admin@kebabbiteri.com', firstName: 'Admin', lastName: 'Biteri',
     role: 'ADMIN', passwordHash: adminPassword,
