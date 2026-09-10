@@ -111,7 +111,12 @@ function LoginForm() {
       }
     } catch (err: any) {
       const msg = err.message || 'Authentication failed. Please try again.'
-      setError(msg)
+      if (msg.includes('EMAIL_NOT_VERIFIED')) {
+        setUnverifiedEmail(form.email)
+        toast.info('Please enter the 6-digit verification code sent to your email.')
+      } else {
+        setError(msg)
+      }
       setLoading(false)
     }
   }
@@ -268,8 +273,13 @@ function LoginForm() {
               setGoogleLoading(false)
             }
           },
-          error_callback: () => {
+          error_callback: (err: any) => {
             setGoogleLoading(false)
+            toast.error(
+              err?.error === 'access_denied'
+                ? 'Access denied by Google or your domain is not authorized in Google Cloud Console.'
+                : 'Google Sign-In was closed or blocked by popup blocker.',
+            )
           },
         })
         client.requestAccessToken()

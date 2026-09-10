@@ -66,19 +66,35 @@ export class AuthService {
   }
 
   async login(dto: { email?: string; phone?: string; password: string }) {
-    const emailOrPhone = dto.email ? dto.email.toLowerCase().trim() : undefined
-    const query = emailOrPhone
-      ? { $or: [{ email: emailOrPhone }, { phone: dto.phone }] }
-      : { phone: dto.phone }
+    const cleanEmail = dto.email ? dto.email.toLowerCase().trim() : undefined
+    const cleanPhone = dto.phone ? dto.phone.trim() : undefined
 
-    const user = await this.userModel.findOne(query)
+    if (!cleanEmail && !cleanPhone) {
+      throw new BadRequestException('Email address or phone number is required.')
+    }
+
+    const conditions: any[] = []
+    if (cleanEmail) conditions.push({ email: cleanEmail })
+    if (cleanPhone) conditions.push({ phone: cleanPhone })
+
+    const user = await this.userModel.findOne(conditions.length > 1 ? { $or: conditions } : conditions[0])
     if (!user || !user.passwordHash) throw new UnauthorizedException('Invalid credentials')
 
     const valid = await bcrypt.compare(dto.password, user.passwordHash)
     if (!valid) throw new UnauthorizedException('Invalid credentials')
 
     if (user.role === 'CUSTOMER' && !user.emailVerified) {
-      throw new ForbiddenException('EMAIL_NOT_VERIFIED: Please verify your email address before logging in.')
+      if (user.email) {
+        const code = crypto.randomInt(100000, 1000000).toString()
+        user.emailVerificationTokenHash = this.hashToken(code)
+        user.emailVerificationExpiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000)
+        user.emailVerificationLastSentAt = new Date()
+        await user.save()
+        await this.mailService
+          .sendVerificationEmail(`${user.firstName || ''} ${user.lastName || ''}`.trim(), user.email, code)
+          .catch(() => {})
+      }
+      throw new ForbiddenException('EMAIL_NOT_VERIFIED: Account is not verified. A new verification code has been sent to your email.')
     }
 
     if (!user.email) {
