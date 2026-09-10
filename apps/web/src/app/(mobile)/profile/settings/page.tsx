@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ChevronLeft, ChevronRight, Globe, Moon, Download, Trash2, LogOut, Bell, BellOff, Loader2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Globe, Moon, Download, Trash2, LogOut, Bell, BellOff, Loader2, Shield } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -189,6 +189,27 @@ export default function SettingsPage() {
                 )} />
               </button>
             </div>
+          </div>
+        </div>
+
+        {/* Admin Portal */}
+        <div>
+          <h2 className="mb-2 px-1 text-xs font-bold uppercase tracking-wide text-subtle">
+            {locale === 'es-ES' ? 'Administración' : 'Administration'}
+          </h2>
+          <div className="overflow-hidden rounded-2xl border border-border">
+            <Link href="/admin/login" className="flex items-center gap-3 px-4 py-3.5 hover:bg-surface-elevated/50 transition-colors">
+              <Shield className="h-5 w-5 text-primary" />
+              <div className="flex-1">
+                <span className="block text-sm font-medium text-charcoal">
+                  {locale === 'es-ES' ? 'Portal de Administración / Login' : 'Admin Portal / Sign In'}
+                </span>
+                <span className="block text-xs text-subtle">
+                  {locale === 'es-ES' ? 'Acceso para administradores del restaurante' : 'Access for restaurant administrators'}
+                </span>
+              </div>
+              <ChevronRight className="h-5 w-5 text-subtle" />
+            </Link>
           </div>
         </div>
 
