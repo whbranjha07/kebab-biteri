@@ -1,4 +1,4 @@
-import { IsString, IsNumber, Min } from '../common/class-validator'
+import { IsString, IsNumber, Min } from 'class-validator'
 
 export class CouponValidateDto {
   @IsString()

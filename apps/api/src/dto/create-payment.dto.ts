@@ -1,4 +1,4 @@
-import { IsUUID, IsEnum } from '../common/class-validator'
+import { IsUUID, IsEnum } from 'class-validator'
 import { PaymentMethod } from '@kebab-biteri/types'
 
 export class CreatePaymentDto {
