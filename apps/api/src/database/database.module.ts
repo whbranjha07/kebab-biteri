@@ -19,12 +19,17 @@ import {
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        uri:
+      useFactory: (configService: ConfigService) => {
+        const dbUri =
           configService.get<string>('DATABASE_URL') ||
           configService.get<string>('MONGODB_URI') ||
-          'mongodb://localhost:27017/kebab-biteri',
-      }),
+          'mongodb+srv://Vercel-Admin-atlas-cobalt-book:atJv8Vb9EtQ93072@atlas-cobalt-book.ml4demu.mongodb.net/kebab-biteri?retryWrites=true&w=majority'
+        return {
+          uri: dbUri,
+          serverSelectionTimeoutMS: 5000,
+          connectTimeoutMS: 5000,
+        }
+      },
     }),
     MongooseModule.forFeature([
       { name: 'User', schema: UserSchema },
