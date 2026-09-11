@@ -1,11 +1,13 @@
 import 'reflect-metadata'
 import type { IncomingMessage, ServerResponse } from 'http'
 import * as dns from 'dns'
-import express = require('express')
+import * as expressModule from 'express'
 import { NestFactory } from '@nestjs/core'
 import { ExpressAdapter } from '@nestjs/platform-express'
 import { ValidationPipe } from '@nestjs/common'
 import { AppModule } from '../src/app.module'
+
+const express: any = (expressModule as any).default || expressModule
 
 function setCorsHeaders(req: IncomingMessage, res: ServerResponse) {
   const origin = (req.headers.origin as string) || '*'
