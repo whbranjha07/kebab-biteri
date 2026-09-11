@@ -53,6 +53,7 @@ export class AuthService {
     })
 
     if (user.email) {
+      this.logger.log(`🔑 Registration code generated for ${user.email}: ${code}`)
       this.mailService
         .sendVerificationEmail(`${user.firstName} ${user.lastName}`, user.email, code)
         .catch((e) => this.logger.error(`Failed to send verification email: ${e.message}`))
@@ -113,13 +114,19 @@ export class AuthService {
     user.loginOtpAttempts = 0
     await user.save()
 
-    // Send real OTP email to the customer's email
-    await this.mailService.sendLoginOtpEmail(
-      `${user.firstName || ''} ${user.lastName || ''}`.trim(),
-      user.email,
-      otp,
-      5,
-    )
+    this.logger.log(`🔑 Login OTP generated for ${user.email}: ${otp}`)
+
+    // Send real OTP email to the customer's email safely
+    try {
+      await this.mailService.sendLoginOtpEmail(
+        `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+        user.email,
+        otp,
+        5,
+      )
+    } catch (e: any) {
+      this.logger.warn(`Failed to send OTP email to ${user.email}: ${e.message}`)
+    }
 
     return {
       requiresOtp: true,

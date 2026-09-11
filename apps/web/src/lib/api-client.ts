@@ -1,6 +1,13 @@
 'use client'
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api'
+function getApiBase(): string {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL?.trim()
+  const baseUrl = envUrl || 'http://localhost:3001'
+  const cleanUrl = baseUrl.replace(/\/+$/, '')
+  return cleanUrl.endsWith('/api') ? cleanUrl : `${cleanUrl}/api`
+}
+
+const API_BASE = getApiBase()
 
 // Token storage — localStorage for PWA
 let accessToken: string | null = null
@@ -51,8 +58,10 @@ async function request<T>(
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+
   try {
-    const res = await fetch(`${API_BASE}${path}`, {
+    const res = await fetch(`${API_BASE}${normalizedPath}`, {
       ...options,
       headers,
       signal: controller.signal,
@@ -60,7 +69,8 @@ async function request<T>(
 
     if (!res.ok) {
       const body = await res.json().catch(() => ({ message: 'Something went wrong' }))
-      throw new ApiError(body.message ?? 'Something went wrong', res.status, body.details)
+      const rawMessage = Array.isArray(body.message) ? body.message.join(', ') : body.message
+      throw new ApiError(rawMessage || body.error || 'Something went wrong', res.status, body.details || body)
     }
 
     return res.status === 204 ? (undefined as T) : res.json()
