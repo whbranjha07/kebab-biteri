@@ -1,6 +1,9 @@
 import 'reflect-metadata'
 import type { IncomingMessage, ServerResponse } from 'http'
 import * as dns from 'dns'
+import { NestFactory } from '@nestjs/core'
+import { ValidationPipe } from '@nestjs/common'
+import { AppModule } from '../src/app.module'
 
 // Ensure public DNS resolvers are available in Vercel Serverless environment for MongoDB Atlas SRV lookup
 try {
@@ -23,16 +26,6 @@ async function bootstrap() {
   if (bootstrapPromise) return bootstrapPromise
 
   bootstrapPromise = (async () => {
-    const { NestFactory } = require('@nestjs/core')
-    const { ValidationPipe } = require('@nestjs/common')
-
-    let AppModule: any
-    try {
-      AppModule = require('../dist/app.module').AppModule
-    } catch {
-      AppModule = require('../src/app.module').AppModule
-    }
-
     const app = await NestFactory.create(AppModule, { logger: ['error', 'warn', 'log'] })
     app.enableCors({
       origin: true,
