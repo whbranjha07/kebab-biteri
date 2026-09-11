@@ -1,14 +1,14 @@
 import 'reflect-metadata'
 import type { IncomingMessage, ServerResponse } from 'http'
 import * as dns from 'dns'
-import { NestFactory } from '@nestjs/core'
-import { ValidationPipe } from '@nestjs/common'
-import { AppModule } from '../src/app.module'
 
-// Ensure public DNS resolvers are available in Vercel Serverless environment for MongoDB Atlas SRV lookup
-try {
-  dns.setServers(['8.8.8.8', '1.1.1.1', ...dns.getServers()])
-} catch {}
+function configureDns() {
+  try {
+    dns.setServers(['8.8.8.8', '1.1.1.1'])
+  } catch {}
+}
+
+configureDns()
 
 let cachedHandler: any = null
 let bootstrapPromise: Promise<any> | null = null
@@ -22,10 +22,15 @@ function setCorsHeaders(req: IncomingMessage, res: ServerResponse) {
 }
 
 async function bootstrap() {
+  configureDns()
   if (cachedHandler) return cachedHandler
   if (bootstrapPromise) return bootstrapPromise
 
   bootstrapPromise = (async () => {
+    const { NestFactory } = require('@nestjs/core')
+    const { ValidationPipe } = require('@nestjs/common')
+    const { AppModule } = require('../src/app.module')
+
     const app = await NestFactory.create(AppModule, { logger: ['error', 'warn', 'log'] })
     app.enableCors({
       origin: true,
