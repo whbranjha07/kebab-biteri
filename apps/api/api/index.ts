@@ -1,6 +1,9 @@
 import 'reflect-metadata'
 import type { IncomingMessage, ServerResponse } from 'http'
 import * as dns from 'dns'
+import { NestFactory } from '@nestjs/core'
+import { ValidationPipe } from '@nestjs/common'
+import { AppModule } from '../src/app.module'
 
 function setCorsHeaders(req: IncomingMessage, res: ServerResponse) {
   const origin = (req.headers.origin as string) || '*'
@@ -18,16 +21,6 @@ async function getApp() {
   try {
     dns.setServers(['8.8.8.8', '1.1.1.1'])
   } catch {}
-
-  const { NestFactory } = require('@nestjs/core')
-  const { ValidationPipe } = require('@nestjs/common')
-  
-  let AppModule: any
-  try {
-    AppModule = require('../dist/app.module').AppModule
-  } catch {
-    AppModule = require('../src/app.module').AppModule
-  }
 
   const app = await NestFactory.create(AppModule, { logger: ['error', 'warn', 'log'] })
   app.setGlobalPrefix('api')
