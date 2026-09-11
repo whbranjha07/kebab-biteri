@@ -30,6 +30,7 @@ import '../src/delivery/delivery.service'
 import '../src/notifications/notifications.controller'
 import '../src/notifications/notifications.service'
 import '../src/websockets/websocket.gateway'
+import '../src/schemas'
 
 function setCorsHeaders(req: IncomingMessage, res: ServerResponse) {
   const origin = (req.headers.origin as string) || '*'
