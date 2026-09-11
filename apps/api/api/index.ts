@@ -70,6 +70,11 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     return
   }
 
+  // Ensure request URL starts with /api so NestJS route matching succeeds cleanly on Vercel
+  if (req.url && !req.url.startsWith('/api')) {
+    req.url = `/api${req.url.startsWith('/') ? '' : '/'}${req.url}`
+  }
+
   try {
     const app = await bootstrap()
     return new Promise((resolve) => {

@@ -96,6 +96,9 @@ async function request<T>(
     if (err.name === 'AbortError') {
       throw new ApiError('Request timed out. Please try again.', 408)
     }
+    if (err.name === 'TypeError' && (err.message?.includes('Load failed') || err.message?.includes('Failed to fetch') || err.message?.includes('network'))) {
+      throw new ApiError('Unable to connect to authentication server. Please check your network connection and try again.', 0)
+    }
     throw err
   } finally {
     clearTimeout(timeoutId)
