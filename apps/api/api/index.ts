@@ -19,24 +19,29 @@ async function getApp() {
   if (cachedApp) return cachedApp
 
   try {
-    dns.setServers(['8.8.8.8', '1.1.1.1'])
-  } catch {}
+    try {
+      dns.setServers(['8.8.8.8', '1.1.1.1'])
+    } catch {}
 
-  const app = await NestFactory.create(AppModule, { logger: ['error', 'warn', 'log'] })
-  app.setGlobalPrefix('api')
-  app.enableCors({
-    origin: true,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  })
-  app.useGlobalPipes(
-    new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }),
-  )
+    const app = await NestFactory.create(AppModule, { logger: ['error', 'warn', 'log'] })
+    app.setGlobalPrefix('api')
+    app.enableCors({
+      origin: true,
+      credentials: true,
+      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    })
+    app.useGlobalPipes(
+      new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }),
+    )
 
-  await app.init()
-  cachedApp = app.getHttpAdapter().getInstance()
-  return cachedApp
+    await app.init()
+    cachedApp = app.getHttpAdapter().getInstance()
+    return cachedApp
+  } catch (err) {
+    cachedApp = null
+    throw err
+  }
 }
 
 export default async function handler(req: IncomingMessage, res: ServerResponse) {
@@ -69,6 +74,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
       JSON.stringify({
         error: 'SERVERLESS_BOOTSTRAP_ERROR',
         message: err?.message || String(err),
+        name: err?.name || 'Error',
         stack: err?.stack || null,
       }),
     )
