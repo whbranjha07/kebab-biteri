@@ -1,13 +1,26 @@
 'use client'
 
-function getApiBase(): string {
+export function getApiBase(): string {
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname
+    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0'
+    const envUrl = process.env.NEXT_PUBLIC_API_URL?.trim()
+
+    if (envUrl && (!envUrl.includes('localhost') || isLocalhost)) {
+      const cleanUrl = envUrl.replace(/\/+$/, '')
+      return cleanUrl.endsWith('/api') ? cleanUrl : `${cleanUrl}/api`
+    }
+
+    if (!isLocalhost) {
+      return 'https://kebab-biteri-api-alpha.vercel.app/api'
+    }
+  }
+
   const envUrl = process.env.NEXT_PUBLIC_API_URL?.trim()
   const baseUrl = envUrl || 'http://localhost:3001'
   const cleanUrl = baseUrl.replace(/\/+$/, '')
   return cleanUrl.endsWith('/api') ? cleanUrl : `${cleanUrl}/api`
 }
-
-const API_BASE = getApiBase()
 
 // Token storage — localStorage for PWA
 let accessToken: string | null = null
@@ -15,15 +28,19 @@ let accessToken: string | null = null
 export function setAccessToken(token: string | null) {
   accessToken = token
   if (typeof window !== 'undefined') {
-    if (token) localStorage.setItem('kb_access_token', token)
-    else localStorage.removeItem('kb_access_token')
+    try {
+      if (token) localStorage.setItem('kb_access_token', token)
+      else localStorage.removeItem('kb_access_token')
+    } catch {}
   }
 }
 
 export function getAccessToken(): string | null {
   if (accessToken) return accessToken
   if (typeof window !== 'undefined') {
-    accessToken = localStorage.getItem('kb_access_token')
+    try {
+      accessToken = localStorage.getItem('kb_access_token')
+    } catch {}
   }
   return accessToken
 }
@@ -59,9 +76,10 @@ async function request<T>(
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
 
   const normalizedPath = path.startsWith('/') ? path : `/${path}`
+  const apiBaseUrl = getApiBase()
 
   try {
-    const res = await fetch(`${API_BASE}${normalizedPath}`, {
+    const res = await fetch(`${apiBaseUrl}${normalizedPath}`, {
       ...options,
       headers,
       signal: controller.signal,

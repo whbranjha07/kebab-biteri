@@ -42,16 +42,11 @@ self.addEventListener('fetch', (event) => {
   // Skip non-GET
   if (request.method !== 'GET') return
 
+  // Always skip API, auth, and backend calls — let browser network handle directly
+  if (url.pathname.startsWith('/api/') || url.pathname.includes('/auth/')) return
+
   // Skip cross-origin (API, maps, etc.) — let network handle
   if (url.origin !== self.location.origin) return
-
-  // API calls: network-first, never cache (orders/payments require fresh data)
-  if (url.pathname.startsWith('/api/')) {
-    event.respondWith(
-      fetch(request).catch(() => caches.match(request)),
-    )
-    return
-  }
 
   // Images: cache-first with background update
   if (request.destination === 'image') {

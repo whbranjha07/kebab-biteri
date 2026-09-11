@@ -35,7 +35,18 @@ function getSocketForRole(type: 'user' | 'admin'): Socket | null {
     }
   } catch {}
 
-  const wsUrl = process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') ?? 'http://localhost:3001'
+  let wsUrl = 'http://localhost:3001'
+  if (typeof window !== 'undefined') {
+    const hostname = window.location.hostname
+    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0'
+    const envUrl = process.env.NEXT_PUBLIC_API_URL?.trim()
+
+    if (envUrl && (!envUrl.includes('localhost') || isLocalhost)) {
+      wsUrl = envUrl.replace(/\/api\/?$/, '').replace(/\/+$/, '')
+    } else if (!isLocalhost) {
+      wsUrl = 'https://kebab-biteri-api-alpha.vercel.app'
+    }
+  }
 
   const auth = type === 'admin'
     ? { userId, role, isAdmin: true }
