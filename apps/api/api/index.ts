@@ -27,9 +27,7 @@ async function getApp() {
       dns.setServers(['8.8.8.8', '1.1.1.1'])
     } catch {}
 
-    const expressApp = express()
-    const adapter = new ExpressAdapter(expressApp)
-    const app = await NestFactory.create(AppModule, adapter, { logger: ['error', 'warn', 'log'] })
+    const app = await NestFactory.create(AppModule, { logger: ['error', 'warn', 'log'] })
     app.setGlobalPrefix('api')
     app.enableCors({
       origin: true,
@@ -42,7 +40,7 @@ async function getApp() {
     )
 
     await app.init()
-    cachedServer = expressApp
+    cachedServer = app.getHttpAdapter().getInstance()
     return cachedServer
   } catch (err) {
     cachedServer = null
