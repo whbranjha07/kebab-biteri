@@ -3,7 +3,7 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, Mail, Lock, ArrowRight, AlertCircle, User as UserIcon, CheckCircle2, RefreshCw, KeyRound, Eye, EyeOff } from 'lucide-react'
+import { ChevronLeft, Mail, Lock, ArrowRight, AlertCircle, User as UserIcon, Phone as PhoneIcon, CheckCircle2, RefreshCw, KeyRound, Eye, EyeOff } from 'lucide-react'
 import { Logo } from '@/components/logo'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/components/ui/toaster'
@@ -20,7 +20,7 @@ function LoginForm() {
   const [error, setError] = useState('')
   const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null)
   const [resending, setResending] = useState(false)
-  const [form, setForm] = useState({ email: '', password: '', firstName: '', lastName: '' })
+  const [form, setForm] = useState({ email: '', password: '', firstName: '', lastName: '', phone: '' })
   const [showLoginPassword, setShowLoginPassword] = useState(false)
 
   // OTP Login State
@@ -100,8 +100,8 @@ function LoginForm() {
         toast.success('Logged in!')
         router.push(redirect)
       } else {
-        if (!form.firstName || !form.lastName || !form.email || !form.password) {
-          setError('Please fill in all fields')
+        if (!form.firstName || !form.lastName || !form.email || !form.password || !form.phone) {
+          setError('Please fill in all fields including phone number')
           setLoading(false)
           return
         }
@@ -539,18 +539,25 @@ function LoginForm() {
             </div>
 
             {mode === 'register' && (
-              <div className="grid grid-cols-2 gap-3">
-                <div className="relative">
-                  <UserIcon className="absolute left-3.5 top-3.5 h-5 w-5 text-subtle" />
-                  <input type="text" placeholder="First name" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })}
-                    className="h-12 w-full rounded-xl border border-border bg-surface-alt pl-11 pr-4 text-sm text-charcoal placeholder:text-subtle focus:border-primary focus:outline-none" />
+              <>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="relative">
+                    <UserIcon className="absolute left-3.5 top-3.5 h-5 w-5 text-subtle" />
+                    <input type="text" placeholder="First name" value={form.firstName} onChange={(e) => setForm({ ...form, firstName: e.target.value })}
+                      className="h-12 w-full rounded-xl border border-border bg-surface-alt pl-11 pr-4 text-sm text-charcoal placeholder:text-subtle focus:border-primary focus:outline-none" />
+                  </div>
+                  <div className="relative">
+                    <UserIcon className="absolute left-3.5 top-3.5 h-5 w-5 text-subtle" />
+                    <input type="text" placeholder="Last name" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+                      className="h-12 w-full rounded-xl border border-border bg-surface-alt pl-11 pr-4 text-sm text-charcoal placeholder:text-subtle focus:border-primary focus:outline-none" />
+                  </div>
                 </div>
                 <div className="relative">
-                  <UserIcon className="absolute left-3.5 top-3.5 h-5 w-5 text-subtle" />
-                  <input type="text" placeholder="Last name" value={form.lastName} onChange={(e) => setForm({ ...form, lastName: e.target.value })}
+                  <PhoneIcon className="absolute left-3.5 top-3.5 h-5 w-5 text-subtle" />
+                  <input type="tel" inputMode="tel" placeholder="Phone number" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })}
                     className="h-12 w-full rounded-xl border border-border bg-surface-alt pl-11 pr-4 text-sm text-charcoal placeholder:text-subtle focus:border-primary focus:outline-none" />
                 </div>
-              </div>
+              </>
             )}
 
             <div className="relative">

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { MapPin, Search, LocateFixed, X, Check } from 'lucide-react'
+import { MapPin, Search, LocateFixed, X, Check, Home, Briefcase, Dumbbell, Star, Tag } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { toast } from '@/components/ui/toaster'
@@ -14,7 +14,15 @@ export interface SelectedAddress {
   postalCode: string
   lat: number
   lng: number
+  isDefault?: boolean
 }
+
+const PRESET_LABELS = [
+  { id: 'Casa', label: 'Casa', labelEn: 'Home', icon: Home },
+  { id: 'Trabajo', label: 'Trabajo', labelEn: 'Work', icon: Briefcase },
+  { id: 'Gimnasio', label: 'Gimnasio', labelEn: 'Gym', icon: Dumbbell },
+  { id: 'custom', label: 'Otro', labelEn: 'Other', icon: Tag },
+] as const
 
 interface AddressPickerProps {
   onSelect: (address: SelectedAddress) => void
@@ -26,6 +34,11 @@ export function AddressPicker({ onSelect, initialAddress }: AddressPickerProps) 
   const [selected, setSelected] = useState<SelectedAddress | null>(null)
   const [loadingLocation, setLoadingLocation] = useState(false)
   const [savedAddresses, setSavedAddresses] = useState<any[]>([])
+  // Label tag state — user can pick a preset or type their own.
+  const [labelPreset, setLabelPreset] = useState<string>('Casa')
+  const [customLabel, setCustomLabel] = useState('')
+  const [makeDefault, setMakeDefault] = useState(false)
+  const resolvedLabel = labelPreset === 'custom' ? (customLabel.trim() || 'Dirección') : labelPreset
 
   // Fetch saved addresses on mount
   useEffect(() => {
@@ -45,12 +58,13 @@ export function AddressPicker({ onSelect, initialAddress }: AddressPickerProps) 
       (position) => {
         const { latitude, longitude } = position.coords
         const addr: SelectedAddress = {
-          label: 'Ubicación actual',
+          label: resolvedLabel,
           street: `Ubicación detectada (${latitude.toFixed(4)}, ${longitude.toFixed(4)})`,
-          city: 'Madrid',
+          city: '',
           postalCode: '',
           lat: latitude,
           lng: longitude,
+          isDefault: makeDefault,
         }
         setSelected(addr)
         setQuery(addr.street)
@@ -71,18 +85,66 @@ export function AddressPicker({ onSelect, initialAddress }: AddressPickerProps) 
       return
     }
     const addr: SelectedAddress = {
-      label: 'Dirección personalizada',
+      label: resolvedLabel,
       street: query.trim(),
-      city: 'Madrid',
+      city: '',
       postalCode: '',
-      lat: 40.42,
-      lng: -3.70,
+      lat: 0,
+      lng: 0,
+      isDefault: makeDefault,
     }
     setSelected(addr)
   }
 
   return (
     <div className="space-y-3">
+      {/* Label / tag picker */}
+      <div>
+        <p className="mb-2 text-xs font-bold uppercase tracking-wide text-subtle">Etiqueta / Label</p>
+        <div className="grid grid-cols-4 gap-2">
+          {PRESET_LABELS.map((preset) => {
+            const Icon = preset.icon
+            const active = labelPreset === preset.id
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                onClick={() => setLabelPreset(preset.id)}
+                className={cn(
+                  'flex flex-col items-center justify-center gap-1 rounded-xl border-2 py-2.5 text-xs font-black transition-all',
+                  active ? 'border-[#F4BE2C] bg-[#FFFDF0] text-zinc-950 shadow-sm' : 'border-amber-200 bg-white text-zinc-600',
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                <span>{preset.label}</span>
+              </button>
+            )
+          })}
+        </div>
+        {labelPreset === 'custom' && (
+          <input
+            type="text"
+            value={customLabel}
+            onChange={(e) => setCustomLabel(e.target.value)}
+            placeholder="Nombre de esta dirección (ej. Casa de mamá)"
+            maxLength={30}
+            className="mt-2 h-11 w-full rounded-xl border border-amber-300 bg-amber-50/30 px-4 text-sm font-semibold text-zinc-950 placeholder:text-zinc-400 focus:border-[#F4BE2C] focus:outline-none"
+          />
+        )}
+      </div>
+
+      {/* Default toggle */}
+      <label className="flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50/30 px-3 py-2.5 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={makeDefault}
+          onChange={(e) => setMakeDefault(e.target.checked)}
+          className="h-4 w-4 accent-[#F4BE2C]"
+        />
+        <Star className={cn('h-4 w-4', makeDefault ? 'text-[#D99F16] fill-[#F4BE2C]' : 'text-zinc-400')} />
+        <span className="text-sm font-bold text-zinc-800">Usar como dirección por defecto</span>
+      </label>
+
       {/* Manual address input */}
       <div className="relative">
         <MapPin className="absolute left-3.5 top-3.5 h-5 w-5 text-subtle" />

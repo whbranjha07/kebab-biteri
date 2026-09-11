@@ -6,12 +6,14 @@ import { Home, UtensilsCrossed, ShoppingBag, User, Package } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useCartItemCount } from '@/lib/cart-store'
 import { useOrders } from '@/hooks/use-orders'
+import { useAuth } from '@/hooks/use-auth'
 import { useI18n } from '@/lib/i18n'
 
 export function MobileBottomNav() {
   const pathname = usePathname()
   const cartCount = useCartItemCount()
   const { orders } = useOrders()
+  const { user } = useAuth()
   const { t } = useI18n()
   const activeOrders = orders.filter(o => !['DELIVERED', 'CANCELLED'].includes(o.status)).length
 
@@ -19,7 +21,8 @@ export function MobileBottomNav() {
     { href: '/', label: t('nav.home'), icon: Home },
     { href: '/menu', label: t('nav.menu'), icon: UtensilsCrossed },
     { href: '/cart', label: t('nav.cart'), icon: ShoppingBag, showBadge: true, badgeType: 'cart' as const },
-    { href: '/orders', label: t('nav.orders'), icon: Package, showBadge: true, badgeType: 'orders' as const },
+    // Orders only for logged-in users — guests can't track guest orders.
+    ...(user ? [{ href: '/orders', label: t('nav.orders'), icon: Package, showBadge: true, badgeType: 'orders' as const }] : []),
     { href: '/profile', label: t('nav.profile'), icon: User },
   ]
 

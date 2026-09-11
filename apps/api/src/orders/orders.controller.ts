@@ -21,9 +21,9 @@ export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
   @Post()
-  async create(@CurrentUser() user: { userId: string }, @Body() dto: CreateOrderDto) {
-    if (!user?.userId) return { success: false, message: 'Unauthorized' }
-    return this.ordersService.create(user.userId, dto)
+  async create(@CurrentUser() user: { userId: string } | null, @Body() dto: CreateOrderDto) {
+    // Guest checkout supported: user may be null when no JWT was sent.
+    return this.ordersService.create(user?.userId ?? null, dto)
   }
 
   @Get()

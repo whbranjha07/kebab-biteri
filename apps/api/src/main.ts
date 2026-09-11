@@ -1,5 +1,7 @@
 import { NestFactory } from '@nestjs/core'
-import { ValidationPipe } from '@nestjs/common'
+import { ValidationPipe, Logger } from '@nestjs/common'
+import { getConnectionToken } from '@nestjs/mongoose'
+import { Connection } from 'mongoose'
 import helmet from 'helmet'
 import * as dns from 'dns'
 import { AppModule } from './app.module'
@@ -41,6 +43,20 @@ async function bootstrap() {
     }),
   )
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }))
+
+  // One-time cleanup: drop the legacy unique index on users.phone if present.
+  // Phone is no longer unique (households often share numbers).
+  try {
+    const conn = app.get<Connection>(getConnectionToken())
+    const indexes = await conn.collection('users').indexes()
+    const phoneIdx = indexes.find((i) => i.name === 'phone_1' && i.unique)
+    if (phoneIdx) {
+      await conn.collection('users').dropIndex('phone_1')
+      new Logger('Startup').log('Dropped legacy unique index users.phone_1')
+    }
+  } catch (e: any) {
+    new Logger('Startup').warn(`Index cleanup skipped: ${e.message}`)
+  }
 
   const port = process.env.PORT ?? 3001
   await app.listen(port)

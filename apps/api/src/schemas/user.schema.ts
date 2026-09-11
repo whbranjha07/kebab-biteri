@@ -22,7 +22,9 @@ export class User {
   @Prop({ unique: true, sparse: true })
   email: string
 
-  @Prop({ unique: true, sparse: true })
+  // Phone is not unique — households often share numbers, and phone-based
+  // account lookup is done alongside email in auth.
+  @Prop({ index: true, sparse: true })
   phone: string
 
   @Prop()

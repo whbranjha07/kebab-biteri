@@ -6,6 +6,7 @@ import { Home, UtensilsCrossed, ShoppingBag, Package, User, Flame } from 'lucide
 import { Logo } from '@/components/logo'
 import { useCartItemCount } from '@/lib/cart-store'
 import { useOrders } from '@/hooks/use-orders'
+import { useAuth } from '@/hooks/use-auth'
 import { useI18n } from '@/lib/i18n'
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { cn } from '@/lib/utils'
@@ -14,6 +15,7 @@ export function DesktopSidebar() {
   const pathname = usePathname()
   const cartCount = useCartItemCount()
   const { orders } = useOrders()
+  const { user } = useAuth()
   const { t } = useI18n()
   const activeOrders = orders.filter(o => !['DELIVERED', 'CANCELLED'].includes(o.status)).length
 
@@ -21,7 +23,8 @@ export function DesktopSidebar() {
     { href: '/', label: t('nav.home'), icon: Home },
     { href: '/menu', label: t('nav.menu'), icon: UtensilsCrossed },
     { href: '/cart', label: t('nav.cart'), icon: ShoppingBag, showBadge: true, count: cartCount },
-    { href: '/orders', label: t('nav.orders'), icon: Package, showBadge: true, count: activeOrders },
+    // Orders only for logged-in users — guest orders aren't linked to any account.
+    ...(user ? [{ href: '/orders', label: t('nav.orders'), icon: Package, showBadge: true, count: activeOrders }] : []),
     { href: '/profile', label: t('nav.profile'), icon: User },
   ]
 
@@ -39,6 +42,8 @@ export function DesktopSidebar() {
         {navItems.map((item) => {
           const active = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href))
           const Icon = item.icon
+          const count: number = 'count' in item && typeof item.count === 'number' ? item.count : 0
+          const showBadge: boolean = 'showBadge' in item ? !!item.showBadge : false
           return (
             <Link
               key={item.href}
@@ -54,12 +59,12 @@ export function DesktopSidebar() {
                 <Icon className={cn('h-5 w-5', active ? 'text-zinc-950 stroke-[2.5]' : 'text-zinc-500')} />
                 <span>{item.label}</span>
               </div>
-              {item.showBadge && item.count > 0 && (
+              {showBadge && count > 0 && (
                 <span className={cn(
                   'flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-xs font-black',
                   active ? 'bg-zinc-950 text-[#F4BE2C]' : 'bg-[#E50909] text-white',
                 )}>
-                  {item.count}
+                  {count}
                 </span>
               )}
             </Link>

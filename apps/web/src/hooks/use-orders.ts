@@ -168,6 +168,10 @@ export async function createOrder(data: {
   paymentMethod: string
   deliveryAddress?: string
   notes?: string
+  // Guest checkout — only sent when the customer is not logged in.
+  guestName?: string
+  guestPhone?: string
+  guestEmail?: string
 }): Promise<Order> {
   return api.post<Order>('/orders', {
     orderType: data.orderType,
@@ -175,6 +179,9 @@ export async function createOrder(data: {
     deliveryAddress: data.deliveryAddress,
     notes: data.notes,
     items: data.items,
+    guestName: data.guestName,
+    guestPhone: data.guestPhone,
+    guestEmail: data.guestEmail,
   })
 }
 

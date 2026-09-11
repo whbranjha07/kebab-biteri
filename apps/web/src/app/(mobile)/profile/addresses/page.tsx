@@ -8,15 +8,24 @@ import { Sheet } from '@/components/ui/sheet'
 import { AddressPicker, type SelectedAddress } from '@/components/address/address-picker'
 import { useAddresses } from '@/hooks/use-addresses'
 
-const labelIcons: Record<string, typeof Home> = { Casa: Home, Trabajo: Briefcase }
+const labelIcons: Record<string, typeof Home> = { Casa: Home, Trabajo: Briefcase, Home: Home, Work: Briefcase }
 
 export default function AddressesPage() {
-  const { addresses, loading, create, remove } = useAddresses()
+  const { addresses, loading, create, update, remove } = useAddresses()
   const [showAdd, setShowAdd] = useState(false)
 
   const handleAdd = async (addr: SelectedAddress) => {
     try {
-      const created = await create({ label: addr.label, street: addr.street, city: addr.city, postalCode: addr.postalCode, country: 'España', lat: addr.lat, lng: addr.lng })
+      const created = await create({
+        label: addr.label,
+        street: addr.street,
+        city: addr.city,
+        postalCode: addr.postalCode,
+        country: 'España',
+        lat: addr.lat,
+        lng: addr.lng,
+        isDefault: addr.isDefault,
+      })
       if (typeof window !== 'undefined') {
         localStorage.setItem('kb_active_address', JSON.stringify(created ?? addr))
       }
@@ -61,7 +70,17 @@ export default function AddressesPage() {
                         {addr.isDefault && <span className="flex items-center gap-1 text-xs font-semibold text-primary"><Star className="h-3 w-3 fill-primary" /> Predeterminada</span>}
                       </div>
                       <p className="mt-0.5 text-sm text-muted">{addr.street}</p>
-                      <p className="text-sm text-muted">{addr.city} · {addr.postalCode}</p>
+                      {(addr.city || addr.postalCode) && (
+                        <p className="text-sm text-muted">{[addr.city, addr.postalCode].filter(Boolean).join(' · ')}</p>
+                      )}
+                      {!addr.isDefault && (
+                        <button
+                          onClick={() => update(addr._id, { isDefault: true })}
+                          className="mt-2 inline-flex items-center gap-1 text-xs font-black text-[#D99F16] hover:underline"
+                        >
+                          <Star className="h-3 w-3" /> Marcar como predeterminada
+                        </button>
+                      )}
                     </div>
                     <button onClick={() => remove(addr._id)} className="touch-target text-subtle"><Trash2 className="h-4 w-4" /></button>
                   </div>

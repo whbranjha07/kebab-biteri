@@ -1,15 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ChevronLeft, MapPin, CreditCard, Wallet, Banknote, Smartphone, Truck, Store, LogIn, User, Phone as PhoneIcon, StickyNote, Sparkles, AlertCircle } from 'lucide-react'
+import { ChevronLeft, MapPin, CreditCard, Wallet, Banknote, Smartphone, Truck, Store, User, Phone as PhoneIcon, Mail, StickyNote, Sparkles, Plus, Check } from 'lucide-react'
 import { useCartStore } from '@/lib/cart-store'
 import { createOrder } from '@/hooks/use-orders'
+import { useAuth } from '@/hooks/use-auth'
+import { useAddresses } from '@/hooks/use-addresses'
 import { Button } from '@/components/ui/button'
 import { formatPrice, cn } from '@/lib/utils'
 import { toast } from '@/components/ui/toaster'
-import { getAccessToken } from '@/lib/api-client'
 import { restaurantInfo } from '@/data/menu-data'
 import { useI18n } from '@/lib/i18n'
 import { LanguageSwitcher } from '@/components/language-switcher'
@@ -29,59 +30,74 @@ export default function CheckoutPage() {
   const router = useRouter()
   const { items, clearCart } = useCartStore()
   const { t, locale } = useI18n()
+  const { user } = useAuth()
+  const { addresses } = useAddresses()
+  const isLoggedIn = !!user
   const [step, setStep] = useState(0)
   const [orderType, setOrderType] = useState<'DELIVERY' | 'PICKUP'>('DELIVERY')
   const [address, setAddress] = useState('')
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
+  const [email, setEmail] = useState('')
   const [notes, setNotes] = useState('')
   const [paymentMethod, setPaymentMethod] = useState('CASH')
   const [placing, setPlacing] = useState(false)
-  const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null)
+  // Address picker state (logged-in users only)
+  const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null)
+  const [useNewAddress, setUseNewAddress] = useState(false)
 
   const steps = [t('checkout.delivery'), t('checkout.summary'), t('checkout.payment')] as const
 
-  useState(() => {
-    setIsLoggedIn(!!getAccessToken())
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('kb_active_address')
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved)
-          if (parsed.street) {
-            setAddress(`${parsed.street}, ${parsed.city ?? ''} ${parsed.postalCode ?? ''}`.trim())
-          }
-        } catch {}
-      }
+  // Prefill name/phone/email from user profile. Runs once when the user
+  // object first becomes available, and again if a specific field on the
+  // user changes and the customer hasn't manually typed anything there yet.
+  const prefilledRef = useRef({ name: false, phone: false, email: false })
+  useEffect(() => {
+    if (!user) return
+    const fullName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim()
+    if (fullName && !prefilledRef.current.name) {
+      setName(fullName)
+      prefilledRef.current.name = true
     }
-  })
+    if (user.phone && !prefilledRef.current.phone) {
+      setPhone(user.phone)
+      prefilledRef.current.phone = true
+    }
+    if (user.email && !prefilledRef.current.email) {
+      setEmail(user.email)
+      prefilledRef.current.email = true
+    }
+  }, [user])
+
+  // Auto-select the default address when addresses load
+  useEffect(() => {
+    if (!isLoggedIn || useNewAddress || selectedAddressId) return
+    if (addresses.length === 0) return
+    const preferred = addresses.find((a) => a.isDefault) ?? addresses[0]
+    setSelectedAddressId(preferred._id)
+    setAddress(`${preferred.street}, ${preferred.city} ${preferred.postalCode}`.trim())
+  }, [addresses, isLoggedIn, useNewAddress, selectedAddressId])
+
+  // Fall back to previously-active address for guests
+  useEffect(() => {
+    if (isLoggedIn) return
+    if (typeof window === 'undefined') return
+    const saved = localStorage.getItem('kb_active_address')
+    if (!saved) return
+    try {
+      const parsed = JSON.parse(saved)
+      if (parsed.street) {
+        setAddress(`${parsed.street}, ${parsed.city ?? ''} ${parsed.postalCode ?? ''}`.trim())
+      }
+    } catch {}
+  }, [isLoggedIn])
 
   const subtotal = items.reduce((sum, i) => sum + i.lineTotal, 0)
   const isFreeDelivery = subtotal >= MIN_FREE_DELIVERY || orderType === 'PICKUP'
   const deliveryFee = orderType === 'DELIVERY' ? (subtotal >= MIN_FREE_DELIVERY ? 0 : STANDARD_DELIVERY_FEE) : 0
   const total = subtotal + deliveryFee
 
-  if (isLoggedIn === false) {
-    return (
-      <div className="flex min-h-dvh flex-col items-center justify-center px-6 text-center">
-        <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[#F4BE2C]/20 border border-amber-300">
-          <LogIn className="h-10 w-10 text-[#D99F16]" />
-        </div>
-        <h1 className="mt-4 font-sans text-xl font-black text-zinc-950">{t('orders.loginRequired')}</h1>
-        <p className="mt-2 text-sm font-medium text-zinc-500">{t('orders.loginPrompt')}</p>
-        <div className="mt-6 flex flex-col gap-3 w-full max-w-xs">
-          <Link href="/profile/login?redirect=/checkout">
-            <Button size="lg" fullWidth className="font-black">{t('orders.loginBtn')}</Button>
-          </Link>
-          <Link href="/menu">
-            <Button variant="outline" size="lg" fullWidth className="font-black">{t('product.backToMenu')}</Button>
-          </Link>
-        </div>
-      </div>
-    )
-  }
-
-  if (items.length === 0 && isLoggedIn) {
+  if (items.length === 0) {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center px-6 text-center">
         <p className="text-lg font-black text-zinc-950">{t('cart.empty')}</p>
@@ -90,12 +106,15 @@ export default function CheckoutPage() {
     )
   }
 
+  const pickSavedAddress = (addrId: string) => {
+    const a = addresses.find((x) => x._id === addrId)
+    if (!a) return
+    setSelectedAddressId(addrId)
+    setUseNewAddress(false)
+    setAddress(`${a.street}, ${a.city} ${a.postalCode}`.trim())
+  }
+
   const handlePlaceOrder = async () => {
-    if (!isLoggedIn) {
-      toast.error(locale === 'es-ES' ? 'Inicia sesión para completar tu pedido' : 'Please login to complete your order')
-      router.push('/profile/login?redirect=/checkout')
-      return
-    }
     if (!name.trim()) {
       toast.error(locale === 'es-ES' ? 'Por favor introduce tu nombre' : 'Please enter your name')
       return
@@ -123,11 +142,9 @@ export default function CheckoutPage() {
         notes: item.notes ?? undefined,
       }))
 
-      // Always format notes in Spanish for the admin kitchen view
       let fullNotes = `Cliente: ${name}, Teléfono: ${phone}`
-      if (notes.trim()) {
-        fullNotes += ` | Notas: ${notes.trim()}`
-      }
+      if (!isLoggedIn && email.trim()) fullNotes += `, Email: ${email.trim()}`
+      if (notes.trim()) fullNotes += ` | Notas: ${notes.trim()}`
 
       const order = await createOrder({
         items: orderItems,
@@ -135,19 +152,24 @@ export default function CheckoutPage() {
         paymentMethod,
         deliveryAddress: orderType === 'DELIVERY' ? address.trim() : undefined,
         notes: fullNotes,
+        // Guest fields only sent when there's no logged-in user.
+        guestName: !isLoggedIn ? name.trim() : undefined,
+        guestPhone: !isLoggedIn ? phone.trim() : undefined,
+        guestEmail: !isLoggedIn ? (email.trim() || undefined) : undefined,
       })
 
-      toast.success(locale === 'es-ES' ? '¡Pedido confirmado! 🎉' : 'Order confirmed! 🎉')
       clearCart()
-      router.push(`/orders/${order._id}`)
+
+      if (paymentMethod === 'CASH') {
+        toast.success(locale === 'es-ES' ? '¡Pedido confirmado! 🎉' : 'Order confirmed! 🎉')
+        // Guests can't view /orders/:id (JWT-guarded), so send them to a public status page.
+        router.push(isLoggedIn ? `/orders/${order._id}` : `/payments/result/${order._id}?status=ok`)
+      } else {
+        router.push(`/payments/redirect/${order._id}?method=${paymentMethod}`)
+      }
     } catch (err: any) {
       const msg = err?.message ?? (locale === 'es-ES' ? 'No se pudo completar el pedido' : 'Could not complete the order')
-      if (err?.statusCode === 401) {
-        toast.error(t('orders.loginPrompt'))
-        router.push('/profile/login?redirect=/checkout')
-      } else {
-        toast.error(msg)
-      }
+      toast.error(msg)
     } finally {
       setPlacing(false)
     }
@@ -234,7 +256,21 @@ export default function CheckoutPage() {
 
             {/* Contact info */}
             <div>
-              <h2 className="mb-3 font-sans text-base font-black text-zinc-950">{t('checkout.contactInfo')}</h2>
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="font-sans text-base font-black text-zinc-950">{t('checkout.contactInfo')}</h2>
+                {!isLoggedIn && (
+                  <Link href="/profile/login?redirect=/checkout" className="text-xs font-black text-[#D99F16] hover:underline">
+                    {locale === 'es-ES' ? 'Iniciar sesión' : 'Log in'}
+                  </Link>
+                )}
+              </div>
+              {!isLoggedIn && (
+                <p className="mb-3 text-xs font-medium text-zinc-500">
+                  {locale === 'es-ES'
+                    ? 'Puedes pedir como invitado o iniciar sesión para guardar tus datos.'
+                    : 'You can order as a guest or log in to save your details.'}
+                </p>
+              )}
               <div className="space-y-3">
                 {/* Name */}
                 <div className="relative">
@@ -248,6 +284,15 @@ export default function CheckoutPage() {
                   <input type="tel" inputMode="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder={t('checkout.phonePlaceholder')}
                     className="h-12 w-full rounded-xl border border-amber-300 bg-amber-50/30 pl-11 pr-4 text-sm font-semibold text-zinc-950 placeholder:text-zinc-400 focus:border-[#F4BE2C] focus:outline-none focus:ring-2 focus:ring-[#F4BE2C]/40" />
                 </div>
+                {/* Email — guest only (logged-in users already provided email at signup) */}
+                {!isLoggedIn && (
+                  <div className="relative">
+                    <Mail className="absolute left-3.5 top-3.5 h-5 w-5 text-zinc-400" />
+                    <input type="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)}
+                      placeholder={locale === 'es-ES' ? 'Email (opcional, para confirmación)' : 'Email (optional, for confirmation)'}
+                      className="h-12 w-full rounded-xl border border-amber-300 bg-amber-50/30 pl-11 pr-4 text-sm font-semibold text-zinc-950 placeholder:text-zinc-400 focus:border-[#F4BE2C] focus:outline-none focus:ring-2 focus:ring-[#F4BE2C]/40" />
+                  </div>
+                )}
               </div>
             </div>
 
@@ -255,12 +300,70 @@ export default function CheckoutPage() {
             {orderType === 'DELIVERY' && (
               <div>
                 <h2 className="mb-3 font-sans text-base font-black text-zinc-950">{t('checkout.address')}</h2>
-                <div className="relative">
-                  <MapPin className="absolute left-3.5 top-3.5 h-5 w-5 text-[#E50909]" />
-                  <textarea value={address} onChange={(e) => setAddress(e.target.value)} rows={3}
-                    placeholder={t('checkout.addressPlaceholder')}
-                    className="w-full resize-none rounded-xl border border-amber-300 bg-amber-50/30 pl-11 pr-4 py-3 text-sm font-semibold text-zinc-950 placeholder:text-zinc-400 focus:border-[#F4BE2C] focus:outline-none focus:ring-2 focus:ring-[#F4BE2C]/40" />
-                </div>
+
+                {/* Saved-address picker for logged-in users */}
+                {isLoggedIn && addresses.length > 0 && (
+                  <div className="mb-3 space-y-2">
+                    {addresses.map((a) => {
+                      const selected = !useNewAddress && selectedAddressId === a._id
+                      return (
+                        <button
+                          key={a._id}
+                          type="button"
+                          onClick={() => pickSavedAddress(a._id)}
+                          className={cn(
+                            'flex w-full items-start gap-3 rounded-2xl border-2 px-4 py-3 text-left transition-all',
+                            selected ? 'border-[#F4BE2C] bg-[#FFFDF0] shadow-sm' : 'border-amber-200 bg-white',
+                          )}
+                        >
+                          <MapPin className="mt-0.5 h-5 w-5 shrink-0 text-[#E50909]" />
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-black text-zinc-950">{a.label}</span>
+                              {a.isDefault && (
+                                <span className="rounded bg-amber-200 px-1.5 py-0.5 text-[10px] font-black uppercase text-amber-900">
+                                  {locale === 'es-ES' ? 'Por defecto' : 'Default'}
+                                </span>
+                              )}
+                            </div>
+                            <p className="text-xs font-semibold text-zinc-600">
+                              {a.street}, {a.city} {a.postalCode}
+                            </p>
+                          </div>
+                          {selected && <Check className="h-5 w-5 text-[#D99F16]" />}
+                        </button>
+                      )
+                    })}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUseNewAddress(true)
+                        setSelectedAddressId(null)
+                        setAddress('')
+                      }}
+                      className={cn(
+                        'flex w-full items-center gap-2 rounded-2xl border-2 border-dashed px-4 py-3 text-sm font-black transition-all',
+                        useNewAddress
+                          ? 'border-[#F4BE2C] bg-[#FFFDF0] text-zinc-950'
+                          : 'border-amber-300 bg-white text-zinc-700 hover:bg-amber-50',
+                      )}
+                    >
+                      <Plus className="h-4 w-4" />
+                      {locale === 'es-ES' ? 'Añadir nueva dirección' : 'Add a new address'}
+                    </button>
+                  </div>
+                )}
+
+                {/* Free-text address — always shown for guests, and for logged-in users
+                    when they choose "add new" or have no saved addresses yet */}
+                {(!isLoggedIn || useNewAddress || addresses.length === 0) && (
+                  <div className="relative">
+                    <MapPin className="absolute left-3.5 top-3.5 h-5 w-5 text-[#E50909]" />
+                    <textarea value={address} onChange={(e) => setAddress(e.target.value)} rows={3}
+                      placeholder={t('checkout.addressPlaceholder')}
+                      className="w-full resize-none rounded-xl border border-amber-300 bg-amber-50/30 pl-11 pr-4 py-3 text-sm font-semibold text-zinc-950 placeholder:text-zinc-400 focus:border-[#F4BE2C] focus:outline-none focus:ring-2 focus:ring-[#F4BE2C]/40" />
+                  </div>
+                )}
 
                 {/* Use my location button */}
                 <button onClick={() => {

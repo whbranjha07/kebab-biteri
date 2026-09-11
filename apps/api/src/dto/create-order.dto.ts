@@ -62,6 +62,19 @@ export class CreateOrderDto {
   @IsString()
   deliveryAddress?: string
 
+  // Guest checkout fields — used only when the order is placed without a logged-in user.
+  @IsOptional()
+  @IsString()
+  guestName?: string
+
+  @IsOptional()
+  @IsString()
+  guestPhone?: string
+
+  @IsOptional()
+  @IsString()
+  guestEmail?: string
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateOrderItemDto)

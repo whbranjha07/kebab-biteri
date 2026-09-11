@@ -12,13 +12,23 @@ export class AddressesService {
   }
 
   async create(userId: string, dto: any) {
-    if (dto.isDefault) {
+    const objectUserId = new Types.ObjectId(userId)
+    // Auto-mark the very first saved address as default so the checkout
+    // has something to pre-fill.
+    const existingCount = await this.addressModel.countDocuments({ userId: objectUserId })
+    const shouldBeDefault = dto.isDefault === true || existingCount === 0
+
+    if (shouldBeDefault) {
       await this.addressModel.updateMany(
-        { userId: new Types.ObjectId(userId), isDefault: true },
+        { userId: objectUserId, isDefault: true },
         { isDefault: false },
       )
     }
-    return this.addressModel.create({ ...dto, userId: new Types.ObjectId(userId) })
+    return this.addressModel.create({
+      ...dto,
+      userId: objectUserId,
+      isDefault: shouldBeDefault,
+    })
   }
 
   async update(userId: string, id: string, dto: any) {

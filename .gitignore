@@ -1,21 +1,29 @@
+# Dependencies
 node_modules/
-.next/
-dist/
-dist-seed/
+
+# Environment
 .env
 .env.local
 .env.*.local
-*.log
-.DS_Store
-coverage/
-.turbo/
-prisma/migrations/dev.db*
-prisma/*.db
-*.tsbuildinfo
+!.env.example
 
-# Firebase service account keys — NEVER commit these
-firebase-service-account*.json
-service-account*.json
-*firebase-adminsdk*.json
-.pnpm-store/
+# Build output
+dist/
+.next/
+out/
+build/
+dist-seed/
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
 .vscode/
+.idea/
+
+# Turbo / Vercel
+.turbo/
+.vercel/

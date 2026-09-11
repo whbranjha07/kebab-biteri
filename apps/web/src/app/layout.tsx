@@ -45,12 +45,13 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" translate="no">
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="google" content="notranslate" />
         <link rel="apple-touch-icon" href="/icons/icon-192.png" />
       </head>
-      <body className="font-sans bg-[#FFFDF2] text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50 antialiased">
+      <body className="notranslate font-sans bg-[#FFFDF2] text-zinc-950 dark:bg-zinc-950 dark:text-zinc-50 antialiased">
         <Providers>
           {children}
           <ServiceWorkerRegister />

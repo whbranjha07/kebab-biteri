@@ -12,13 +12,40 @@ export interface AuthUser {
   role: string
 }
 
+const USER_CACHE_KEY = 'kb_user'
+
+function loadCachedUser(): AuthUser | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = localStorage.getItem(USER_CACHE_KEY)
+    return raw ? (JSON.parse(raw) as AuthUser) : null
+  } catch {
+    return null
+  }
+}
+
+function persistUser(user: AuthUser | null) {
+  if (typeof window === 'undefined') return
+  try {
+    if (user) localStorage.setItem(USER_CACHE_KEY, JSON.stringify(user))
+    else localStorage.removeItem(USER_CACHE_KEY)
+  } catch {}
+}
+
 export function useAuth() {
-  const [user, setUser] = useState<AuthUser | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [user, setUserState] = useState<AuthUser | null>(loadCachedUser)
+  // If we already have a cached user, don't gate the UI behind a spinner.
+  const [loading, setLoading] = useState(!loadCachedUser())
+
+  const setUser = useCallback((next: AuthUser | null) => {
+    persistUser(next)
+    setUserState(next)
+  }, [])
 
   useEffect(() => {
     const token = getAccessToken()
     if (!token) {
+      setUser(null)
       setLoading(false)
       return
     }

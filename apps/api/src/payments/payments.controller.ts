@@ -23,14 +23,29 @@ export class PaymentsController {
     return this.paymentsService.createPayment(dto)
   }
 
+  // Public: returns only order status/amount so both logged-in users and
+  // guests can poll after being redirected back from Sabadell.
   @Get(':id/verify')
-  @UseGuards(JwtAuthGuard)
   async verify(@Param('id') id: string) {
     return this.paymentsService.verifyPayment(id)
   }
 
-  // Webhook — NO auth guard (provider calls this)
-  // Signature verification is done inside the handler
+  // Banco Sabadell (Redsys TPV Virtual) — build signed redirect form.
+  // Public so guests can pay after guest checkout; the order id is already
+  // opaque and the merchant secret never leaves the server.
+  @Post('sabadell/create')
+  async sabadellCreate(@Body() body: { orderId: string; method: string }) {
+    return this.paymentsService.createSabadellPayment(body.orderId, body.method)
+  }
+
+  // Banco Sabadell server-to-server notification (unauthenticated;
+  // signature is verified inside the handler).
+  @Post('sabadell/notification')
+  async sabadellNotification(@Body() body: any) {
+    return this.paymentsService.handleSabadellNotification(body)
+  }
+
+  // Legacy Stripe-style webhook — kept for compatibility.
   @Post('webhook')
   async webhook(
     @Req() req: Request,

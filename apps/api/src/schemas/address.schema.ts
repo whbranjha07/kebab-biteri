@@ -8,25 +8,26 @@ export class Address {
   @Prop({ type: Types.ObjectId, required: true, ref: 'User' })
   userId: Types.ObjectId
 
-  @Prop({ required: true })
+  @Prop({ default: 'Dirección' })
   label: string
 
   @Prop({ required: true })
   street: string
 
-  @Prop({ required: true })
+  @Prop({ default: '' })
   city: string
 
-  @Prop({ required: true })
+  // Optional — Spanish postal codes exist but aren't required for local delivery.
+  @Prop({ default: '' })
   postalCode: string
 
   @Prop({ default: 'España' })
   country: string
 
-  @Prop({ required: true })
+  @Prop({ default: 0 })
   lat: number
 
-  @Prop({ required: true })
+  @Prop({ default: 0 })
   lng: number
 
   @Prop()

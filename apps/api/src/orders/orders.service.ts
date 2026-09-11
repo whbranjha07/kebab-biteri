@@ -33,15 +33,17 @@ export class OrdersService {
     private mailService: MailService,
   ) {}
 
-  async create(userId: string, dto: CreateOrderDto) {
-    // Get user info for customer name/phone
+  async create(userId: string | null, dto: CreateOrderDto & { guestName?: string; guestPhone?: string; guestEmail?: string }) {
+    // Registered user or guest — pull customer info from user record or DTO.
     let user: any = null
-    if (Types.ObjectId.isValid(userId)) {
+    if (userId && Types.ObjectId.isValid(userId)) {
       user = await this.userModel.findById(userId).lean()
     }
-    const customerName = user ? `${user.firstName} ${user.lastName}`.trim() : 'Customer'
-    const customerPhone = user?.phone ?? user?.email ?? ''
-    const customerEmail = user?.email ?? ''
+    const customerName = user
+      ? `${user.firstName} ${user.lastName}`.trim()
+      : (dto.guestName?.trim() || 'Guest')
+    const customerPhone = user?.phone ?? dto.guestPhone ?? ''
+    const customerEmail = user?.email ?? dto.guestEmail ?? ''
 
     // Build order items from the DTO — use frontend-provided prices (static menu data)
     let subtotal = 0
@@ -84,7 +86,7 @@ export class OrdersService {
     const orderCount = await this.orderModel.countDocuments()
     const orderNumber = String(10000 + orderCount + 1)
 
-    const validUserId = Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : new Types.ObjectId()
+    const validUserId = userId && Types.ObjectId.isValid(userId) ? new Types.ObjectId(userId) : new Types.ObjectId()
 
     const order = await this.orderModel.create({
       orderNumber,
@@ -137,7 +139,7 @@ export class OrdersService {
       })
       .catch((e) => this.logger.error(`Failed to send order email: ${e.message}`))
 
-    this.logger.log(`Order ${orderNumber} created for user ${userId}, emitted to admin`)
+    this.logger.log(`Order ${orderNumber} created for ${userId ? `user ${userId}` : `guest ${customerName}`}, emitted to admin`)
 
     return populatedOrder
   }

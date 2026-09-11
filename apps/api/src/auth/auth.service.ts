@@ -246,7 +246,7 @@ export class AuthService {
     return {
       success: true,
       message: 'Email verified successfully!',
-      ...this.generateTokens(user),
+      ...(await this.generateTokens(user)),
     }
   }
 
