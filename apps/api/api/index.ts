@@ -96,7 +96,7 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     setCorsHeaders(req, res)
     res.statusCode = 500
     res.setHeader('Content-Type', 'application/json')
-    res.end(
+    return res.end(
       JSON.stringify({
         error: 'SERVERLESS_BOOTSTRAP_ERROR',
         message: err?.message || String(err),
