@@ -67,7 +67,11 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
 
   try {
     const app = await bootstrap()
-    return app(req, res)
+    return new Promise((resolve) => {
+      res.on('finish', resolve)
+      res.on('close', resolve)
+      app(req, res)
+    })
   } catch (err: any) {
     setCorsHeaders(req, res)
     res.statusCode = 500
