@@ -55,6 +55,12 @@ export default async function handler(req: IncomingMessage, res: ServerResponse)
     return
   }
 
+  // Restore original request path if Vercel rewrote req.url to destination (/api/index.ts)
+  const matchedPath = (req.headers['x-matched-path'] as string) || (req.headers['x-now-route-matches'] as string)
+  if (matchedPath && !matchedPath.includes('index.ts')) {
+    req.url = matchedPath
+  }
+
   if (req.url && !req.url.startsWith('/api')) {
     req.url = `/api${req.url.startsWith('/') ? '' : '/'}${req.url}`
   }
