@@ -1,7 +1,9 @@
 import 'reflect-metadata'
 import type { IncomingMessage, ServerResponse } from 'http'
 import * as dns from 'dns'
+import * as express from 'express'
 import { NestFactory } from '@nestjs/core'
+import { ExpressAdapter } from '@nestjs/platform-express'
 import { ValidationPipe } from '@nestjs/common'
 import { AppModule } from '../src/app.module'
 
@@ -13,17 +15,19 @@ function setCorsHeaders(req: IncomingMessage, res: ServerResponse) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With')
 }
 
-let cachedApp: any = null
+let cachedServer: any = null
 
 async function getApp() {
-  if (cachedApp) return cachedApp
+  if (cachedServer) return cachedServer
 
   try {
     try {
       dns.setServers(['8.8.8.8', '1.1.1.1'])
     } catch {}
 
-    const app = await NestFactory.create(AppModule, { logger: ['error', 'warn', 'log'] })
+    const expressApp = express()
+    const adapter = new ExpressAdapter(expressApp)
+    const app = await NestFactory.create(AppModule, adapter, { logger: ['error', 'warn', 'log'] })
     app.setGlobalPrefix('api')
     app.enableCors({
       origin: true,
@@ -36,10 +40,10 @@ async function getApp() {
     )
 
     await app.init()
-    cachedApp = app.getHttpAdapter().getInstance()
-    return cachedApp
+    cachedServer = expressApp
+    return cachedServer
   } catch (err) {
-    cachedApp = null
+    cachedServer = null
     throw err
   }
 }
