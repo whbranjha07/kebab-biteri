@@ -1,6 +1,6 @@
 {
   "installCommand": "cd ../.. && node scripts/vercel-install.js apps/api && npm install && npm run build --workspace=@kebab-biteri/types",
-  "buildCommand": "echo skip",
+  "buildCommand": "npm run build --workspace=@kebab-biteri/api",
   "framework": null,
   "rewrites": [
     { "source": "/health", "destination": "/api/health" },

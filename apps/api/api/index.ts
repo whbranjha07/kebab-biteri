@@ -23,10 +23,15 @@ async function bootstrap() {
   if (bootstrapPromise) return bootstrapPromise
 
   bootstrapPromise = (async () => {
-    // Defer imports so any load error is catchable
     const { NestFactory } = require('@nestjs/core')
     const { ValidationPipe } = require('@nestjs/common')
-    const { AppModule } = require('../src/app.module')
+
+    let AppModule: any
+    try {
+      AppModule = require('../dist/app.module').AppModule
+    } catch {
+      AppModule = require('../src/app.module').AppModule
+    }
 
     const app = await NestFactory.create(AppModule, { logger: ['error', 'warn', 'log'] })
     app.enableCors({
