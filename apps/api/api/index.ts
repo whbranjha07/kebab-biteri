@@ -27,24 +27,29 @@ async function bootstrap() {
   if (bootstrapPromise) return bootstrapPromise
 
   bootstrapPromise = (async () => {
-    const { NestFactory } = require('@nestjs/core')
-    const { ValidationPipe } = require('@nestjs/common')
-    const { AppModule } = require('../src/app.module')
+    try {
+      const { NestFactory } = require('@nestjs/core')
+      const { ValidationPipe } = require('@nestjs/common')
+      const { AppModule } = require('../src/app.module')
 
-    const app = await NestFactory.create(AppModule, { logger: ['error', 'warn', 'log'] })
-    app.enableCors({
-      origin: true,
-      credentials: true,
-      methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-      allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-    })
-    app.useGlobalPipes(
-      new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }),
-    )
+      const app = await NestFactory.create(AppModule, { logger: ['error', 'warn', 'log'] })
+      app.enableCors({
+        origin: true,
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+        allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+      })
+      app.useGlobalPipes(
+        new ValidationPipe({ whitelist: true, transform: true, forbidNonWhitelisted: true }),
+      )
 
-    await app.init()
-    cachedHandler = app.getHttpAdapter().getInstance()
-    return cachedHandler
+      await app.init()
+      cachedHandler = app.getHttpAdapter().getInstance()
+      return cachedHandler
+    } catch (err) {
+      bootstrapPromise = null
+      throw err
+    }
   })()
 
   return bootstrapPromise
