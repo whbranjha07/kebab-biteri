@@ -30,7 +30,12 @@ async function bootstrap() {
     try {
       const { NestFactory } = require('@nestjs/core')
       const { ValidationPipe } = require('@nestjs/common')
-      const { AppModule } = require('../src/app.module')
+      let AppModule: any
+      try {
+        AppModule = require('../dist/app.module').AppModule
+      } catch {
+        AppModule = require('../src/app.module').AppModule
+      }
 
       const app = await NestFactory.create(AppModule, { logger: ['error', 'warn', 'log'] })
       app.setGlobalPrefix('api')
