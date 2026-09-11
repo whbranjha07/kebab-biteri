@@ -33,6 +33,7 @@ async function bootstrap() {
       const { AppModule } = require('../src/app.module')
 
       const app = await NestFactory.create(AppModule, { logger: ['error', 'warn', 'log'] })
+      app.setGlobalPrefix('api')
       app.enableCors({
         origin: true,
         credentials: true,
