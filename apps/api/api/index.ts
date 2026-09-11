@@ -1,7 +1,7 @@
 import 'reflect-metadata'
 import type { IncomingMessage, ServerResponse } from 'http'
 import * as dns from 'dns'
-import * as express from 'express'
+import express = require('express')
 import { NestFactory } from '@nestjs/core'
 import { ExpressAdapter } from '@nestjs/platform-express'
 import { ValidationPipe } from '@nestjs/common'
