@@ -18,7 +18,7 @@ import { MailModule } from './mail/mail.module'
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true, envFilePath: [".env", "../../.env"] }),
+    ConfigModule.forRoot({ isGlobal: true, ignoreEnvFile: process.env.NODE_ENV === 'production', envFilePath: [".env", "../../.env"] }),
     ThrottlerModule.forRoot([
       { ttl: 60000, limit: 100 },
     ]),
