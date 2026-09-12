@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { api, setAccessToken, getAccessToken } from '@/lib/api-client'
+import { disconnectSocket } from '@/lib/ws-client'
 
 export interface AuthUser {
   id: string
@@ -168,6 +169,7 @@ export function useAuth() {
       localStorage.removeItem('kb_fcm_token')
     }
 
+    disconnectSocket()
     setAccessToken(null)
     setUser(null)
   }, [])

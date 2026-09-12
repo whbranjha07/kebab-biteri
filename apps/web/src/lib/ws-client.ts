@@ -1,85 +1,206 @@
 'use client'
 
-import { io, Socket } from 'socket.io-client'
+/**
+ * Realtime event client — Firestore-backed.
+ *
+ * The file is still called `ws-client.ts` (and exports `getSocket` /
+ * `getAdminSocket`) so existing callers don't churn, but there is no
+ * WebSocket underneath: server publishes events to Firestore, browser
+ * subscribes via long-lived onSnapshot. Works on Vercel serverless
+ * because the browser holds the long-lived connection to Firestore, not
+ * to your API.
+ *
+ * Auth flow:
+ *   1. On first subscribe, POST /auth/firebase-token with the app JWT
+ *   2. signInWithCustomToken → Firebase Auth identifies the browser as
+ *      the same userId your API knows, so security rules apply
+ *   3. onSnapshot on `user_events/{uid}/events` (or `admin_events`)
+ *      filtered to `createdAt > <connect time>` so we only see new events
+ */
 
-const sockets = new Map<string, Socket>()
+import { api } from '@/lib/api-client'
+import { getFirestoreClient, getFirebaseAuth, isFirebaseCoreConfigured } from '@/lib/firebase/config'
 
-export function getSocket(): Socket | null {
-  return getSocketForRole('user')
+type EventHandler = (data: any) => void
+
+interface RealtimeChannel {
+  on: (event: string, handler: EventHandler) => void
+  off: (event: string, handler?: EventHandler) => void
+  disconnect: () => void
 }
 
-export function getAdminSocket(): Socket | null {
-  return getSocketForRole('admin')
+// ─── No-op channel used when Firebase is unavailable ─────────────
+
+function noopChannel(): RealtimeChannel {
+  return {
+    on: () => {},
+    off: () => {},
+    disconnect: () => {},
+  }
 }
 
-function getSocketForRole(type: 'user' | 'admin'): Socket | null {
-  if (typeof window === 'undefined') return null
+// ─── Live channel backed by a single Firestore onSnapshot ────────
 
-  const existing = sockets.get(type)
-  if (existing?.connected) return existing
+class FirestoreChannel implements RealtimeChannel {
+  private handlers = new Map<string, Set<EventHandler>>()
+  private unsubscribe: (() => void) | null = null
+  private disposed = false
 
-  if (existing) {
-    existing.disconnect()
-    sockets.delete(type)
+  constructor(private readonly kind: 'user' | 'admin') {
+    void this.connect()
   }
 
-  const token = localStorage.getItem('kb_access_token')
-  let userId: string | undefined
-  let role: string | undefined
-
-  try {
-    if (token) {
-      const payload = JSON.parse(atob(token.split('.')[1]))
-      userId = payload.sub
-      role = payload.role
+  private async connect() {
+    if (this.disposed) return
+    if (!isFirebaseCoreConfigured()) {
+      console.log(`[Realtime:${this.kind}] Firebase not configured — subscription skipped.`)
+      return
     }
-  } catch {}
+    try {
+      const auth = await getFirebaseAuth()
+      const db = await getFirestoreClient()
+      if (!auth || !db) return
 
-  let wsUrl = 'http://localhost:3001'
-  if (typeof window !== 'undefined') {
-    const hostname = window.location.hostname
-    const isLocalhost = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '0.0.0.0'
-    const envUrl = process.env.NEXT_PUBLIC_API_URL?.trim()
+      const { onAuthStateChanged, signInWithCustomToken } = await import('firebase/auth' as any)
+      const {
+        collection,
+        collectionGroup,
+        doc,
+        query,
+        where,
+        orderBy,
+        onSnapshot,
+        Timestamp,
+      } = await import('firebase/firestore' as any)
 
-    if (envUrl && (!envUrl.includes('localhost') || isLocalhost)) {
-      wsUrl = envUrl.replace(/\/api\/?$/, '').replace(/\/+$/, '')
-    } else if (!isLocalhost) {
-      wsUrl = 'https://kebab-biteri-api-alpha.vercel.app'
+      // If the browser is not yet signed into Firebase (or is signed in as
+      // someone else), mint a custom token from our API and sign in.
+      const currentUid: string | null = auth.currentUser?.uid ?? null
+      let uid: string | null = currentUid
+
+      if (!uid) {
+        try {
+          const res = await api.post<{ token: string; admin: boolean }>('/auth/firebase-token', {})
+          if (!res?.token) throw new Error('empty token from /auth/firebase-token')
+          const cred = await signInWithCustomToken(auth, res.token)
+          uid = cred?.user?.uid ?? null
+        } catch (err: any) {
+          console.log(`[Realtime:${this.kind}] Sign-in failed:`, err?.message || err)
+          return
+        }
+      }
+
+      if (!uid) return
+      if (this.disposed) return
+
+      const anchor = Timestamp.now()
+
+      let colRef: any
+      if (this.kind === 'user') {
+        colRef = collection(doc(collection(db, 'user_events'), uid), 'events')
+      } else {
+        colRef = collection(db, 'admin_events')
+      }
+
+      const q = query(colRef, where('createdAt', '>', anchor), orderBy('createdAt', 'asc'))
+
+      this.unsubscribe = onSnapshot(
+        q,
+        (snap: any) => {
+          snap.docChanges().forEach((change: any) => {
+            if (change.type !== 'added') return
+            const raw = change.doc.data()
+            const type: string | undefined = raw?.type
+            const data = raw?.data
+            if (!type) return
+            const set = this.handlers.get(type)
+            if (!set || set.size === 0) return
+            for (const handler of set) {
+              try {
+                handler(data)
+              } catch (err) {
+                console.error(`[Realtime:${this.kind}] handler for '${type}' threw`, err)
+              }
+            }
+          })
+        },
+        (err: any) => {
+          console.log(`[Realtime:${this.kind}] Subscription error:`, err?.message || err)
+        },
+      )
+      // silence unused import warning; keep for potential future use
+      void collectionGroup
+    } catch (err: any) {
+      console.log(`[Realtime:${this.kind}] Connect failed:`, err?.message || err)
     }
   }
 
-  const auth = type === 'admin'
-    ? { userId, role, isAdmin: true }
-    : { userId, role }
+  on(event: string, handler: EventHandler) {
+    let set = this.handlers.get(event)
+    if (!set) {
+      set = new Set()
+      this.handlers.set(event, set)
+    }
+    set.add(handler)
+  }
 
-  const socket = io(wsUrl, {
-    auth,
-    transports: ['websocket', 'polling'],
-    autoConnect: true,
-    reconnection: true,
-    reconnectionDelay: 1000,
-    reconnectionAttempts: Infinity,
-  })
+  off(event: string, handler?: EventHandler) {
+    if (!handler) {
+      this.handlers.delete(event)
+      return
+    }
+    const set = this.handlers.get(event)
+    if (!set) return
+    set.delete(handler)
+    if (set.size === 0) this.handlers.delete(event)
+  }
 
-  socket.on('connect', () => {
-    console.log(`[WS:${type}] Connected`, auth)
-  })
+  disconnect() {
+    this.disposed = true
+    this.handlers.clear()
+    if (this.unsubscribe) {
+      try { this.unsubscribe() } catch {}
+      this.unsubscribe = null
+    }
+  }
+}
 
-  socket.on('disconnect', () => {
-    console.log(`[WS:${type}] Disconnected`)
-  })
+// ─── Cache one channel per kind for the browser session ──────────
 
-  socket.on('connect_error', (err) => {
-    console.log(`[WS:${type}] Connection error:`, err.message)
-  })
+const channels = new Map<'user' | 'admin', RealtimeChannel>()
 
-  sockets.set(type, socket)
-  return socket
+function getChannel(kind: 'user' | 'admin'): RealtimeChannel {
+  if (typeof window === 'undefined') return noopChannel()
+  const existing = channels.get(kind)
+  if (existing) return existing
+  const ch: RealtimeChannel = isFirebaseCoreConfigured() ? new FirestoreChannel(kind) : noopChannel()
+  channels.set(kind, ch)
+  return ch
+}
+
+// ─── Public API — matches the old socket.io-client surface ───────
+
+export function getSocket(): RealtimeChannel {
+  return getChannel('user')
+}
+
+export function getAdminSocket(): RealtimeChannel {
+  return getChannel('admin')
 }
 
 export function disconnectSocket() {
-  for (const [key, socket] of sockets) {
-    socket.disconnect()
-    sockets.delete(key)
+  for (const [key, ch] of channels) {
+    ch.disconnect()
+    channels.delete(key)
   }
+  // also sign out of Firebase Auth so a subsequent login can re-mint
+  void (async () => {
+    try {
+      const auth = await getFirebaseAuth()
+      if (auth?.currentUser) {
+        const { signOut } = await import('firebase/auth' as any)
+        await signOut(auth)
+      }
+    } catch {}
+  })()
 }

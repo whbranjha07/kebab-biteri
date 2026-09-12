@@ -2,8 +2,8 @@
  * Kebab Biteri — Firebase browser configuration
  *
  * All values come from NEXT_PUBLIC_ env vars (safe to expose in the browser).
- * Firebase Messaging is only initialized in the browser — this file is
- * imported dynamically from client components, never from server code.
+ * Firebase Messaging + Firestore are only initialized in the browser — this
+ * file is imported dynamically from client components, never from server code.
  */
 
 export const firebaseConfig = {
@@ -27,4 +27,54 @@ export function isFirebaseConfigured(): boolean {
       process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID ||
       (typeof window !== 'undefined' && 'Notification' in window)
   )
+}
+
+/**
+ * True when we have enough config to talk to Firestore/Auth — used by the
+ * realtime client to decide whether to attempt a subscription at all.
+ */
+export function isFirebaseCoreConfigured(): boolean {
+  return Boolean(firebaseConfig.apiKey && firebaseConfig.projectId && firebaseConfig.appId)
+}
+
+// ─── Lazy-initialised singletons (browser only) ────────────────────────
+
+let appPromise: Promise<any> | null = null
+let firestorePromise: Promise<any> | null = null
+let authPromise: Promise<any> | null = null
+
+async function getFirebaseApp(): Promise<any | null> {
+  if (typeof window === 'undefined') return null
+  if (!isFirebaseCoreConfigured()) return null
+  if (!appPromise) {
+    appPromise = (async () => {
+      const { initializeApp, getApps, getApp } = await import('firebase/app' as any)
+      return getApps().length ? getApp() : initializeApp(firebaseConfig)
+    })()
+  }
+  return appPromise
+}
+
+export async function getFirestoreClient(): Promise<any | null> {
+  const app = await getFirebaseApp()
+  if (!app) return null
+  if (!firestorePromise) {
+    firestorePromise = (async () => {
+      const { getFirestore } = await import('firebase/firestore' as any)
+      return getFirestore(app)
+    })()
+  }
+  return firestorePromise
+}
+
+export async function getFirebaseAuth(): Promise<any | null> {
+  const app = await getFirebaseApp()
+  if (!app) return null
+  if (!authPromise) {
+    authPromise = (async () => {
+      const { getAuth } = await import('firebase/auth' as any)
+      return getAuth(app)
+    })()
+  }
+  return authPromise
 }

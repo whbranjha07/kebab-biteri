@@ -2,9 +2,13 @@ import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
 
 let admin: any = null
 let getMessaging: any = null
+let getFirestore: any = null
+let getAdminAuth: any = null
 try {
   admin = require('firebase-admin')
   getMessaging = require('firebase-admin/messaging').getMessaging
+  getFirestore = require('firebase-admin/firestore').getFirestore
+  getAdminAuth = require('firebase-admin/auth').getAuth
 } catch (e) {
   // firebase-admin is optional
 }
@@ -14,6 +18,8 @@ export class FirebaseService implements OnModuleInit {
   private readonly logger = new Logger(FirebaseService.name)
   private app: any = null
   private messaging: any = null
+  private firestoreInstance: any = null
+  private authInstance: any = null
   private initialized = false
 
   onModuleInit() {
@@ -43,6 +49,8 @@ export class FirebaseService implements OnModuleInit {
         }),
       })
       this.messaging = getMessaging(this.app)
+      if (getFirestore) this.firestoreInstance = getFirestore(this.app)
+      if (getAdminAuth) this.authInstance = getAdminAuth(this.app)
       this.initialized = true
       this.logger.log('Firebase Admin initialized successfully ✓')
     } catch (err: unknown) {
@@ -53,6 +61,18 @@ export class FirebaseService implements OnModuleInit {
 
   get isAvailable(): boolean {
     return this.initialized && this.messaging !== null
+  }
+
+  get firestore(): any {
+    return this.firestoreInstance
+  }
+
+  get auth(): any {
+    return this.authInstance
+  }
+
+  get serverTimestamp(): any {
+    return admin?.firestore?.FieldValue?.serverTimestamp?.() ?? null
   }
 
   async sendMulticast(
