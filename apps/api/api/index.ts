@@ -32,6 +32,14 @@ import '../src/notifications/notifications.service'
 import '../src/websockets/websocket.gateway'
 import '../src/schemas'
 
+// Explicit subpath imports so @vercel/nft bundles firebase-admin modular
+// entrypoints — dynamic requires inside firebase.service.ts's try/catch
+// are not always traced.
+import 'firebase-admin'
+import 'firebase-admin/auth'
+import 'firebase-admin/firestore'
+import 'firebase-admin/messaging'
+
 function setCorsHeaders(req: IncomingMessage, res: ServerResponse) {
   const origin = (req.headers.origin as string) || '*'
   res.setHeader('Access-Control-Allow-Origin', origin)
