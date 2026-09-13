@@ -71,6 +71,41 @@ export class NotificationsService {
     return notification
   }
 
+  /**
+   * Push a "new order" notification to every ADMIN/MANAGER/KITCHEN user's
+   * registered devices. Called at order-creation time so staff get an
+   * OS-level push even if the admin PWA isn't focused.
+   */
+  async sendNewOrderNotificationToAdmins(orderNumber: string, orderId: string, total: number, orderType: string) {
+    const admins = await this.userModel
+      .find({
+        role: { $in: ['ADMIN', 'MANAGER', 'KITCHEN'] },
+        isActive: { $ne: false },
+      })
+      .select('_id fcmTokens fcmToken')
+      .lean()
+
+    if (admins.length === 0) return
+
+    const title = '🔔 Nuevo pedido'
+    const body = `Pedido #${orderNumber} · €${total.toFixed(2)} · ${orderType === 'DELIVERY' ? 'Entrega' : 'Recogida'}`
+    const data = { type: 'NEW_ORDER', orderId, orderNumber, total: total.toFixed(2), orderType }
+
+    const results = await Promise.allSettled(
+      admins.map((admin: any) => {
+        const uid = admin._id?.toString?.() ?? String(admin._id)
+        return this.sendPushNotification(uid, title, body, 'TRANSACTIONAL', data)
+      }),
+    )
+
+    const failed = results.filter((r) => r.status === 'rejected').length
+    if (failed > 0) {
+      this.logger.warn(`Admin new-order push: ${failed}/${admins.length} recipient failures for order #${orderNumber}`)
+    } else {
+      this.logger.log(`Admin new-order push: notified ${admins.length} admin(s) for order #${orderNumber}`)
+    }
+  }
+
   async sendOrderStatusNotification(userId: string, orderNumber: string, status: string, orderId?: string) {
     const messages: Record<string, { title: string; body: string }> = {
       PENDING: { title: '🌯 Kebab Biteri', body: `Tu pedido #${orderNumber} ha sido recibido.` },

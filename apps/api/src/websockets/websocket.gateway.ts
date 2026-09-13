@@ -19,6 +19,17 @@ export class WebsocketGateway {
 
   constructor(private readonly firebase: FirebaseService) {}
 
+  // Firestore rejects custom-prototype objects (Mongo ObjectId, Date subclasses, etc).
+  // JSON round-trip strips them to plain scalars/plain-object graphs.
+  private toPlain(data: unknown): unknown {
+    if (data == null) return null
+    try {
+      return JSON.parse(JSON.stringify(data))
+    } catch {
+      return null
+    }
+  }
+
   emitToUser(userId: string, event: string, data: unknown): void {
     const db = this.firebase.firestore
     if (!db) {
@@ -29,18 +40,23 @@ export class WebsocketGateway {
       this.logger.warn(`emitToUser called with empty userId (event=${event})`)
       return
     }
-    db.collection('user_events')
-      .doc(userId)
-      .collection('events')
-      .add({
-        type: event,
-        data: data ?? null,
-        createdAt: this.firebase.serverTimestamp,
-      })
-      .catch((err: unknown) => {
-        const msg = err instanceof Error ? err.message : String(err)
-        this.logger.error(`Failed to publish user event ${event} for ${userId}: ${msg}`)
-      })
+    try {
+      db.collection('user_events')
+        .doc(userId)
+        .collection('events')
+        .add({
+          type: event,
+          data: this.toPlain(data),
+          createdAt: this.firebase.serverTimestamp,
+        })
+        .catch((err: unknown) => {
+          const msg = err instanceof Error ? err.message : String(err)
+          this.logger.error(`Failed to publish user event ${event} for ${userId}: ${msg}`)
+        })
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      this.logger.error(`Failed to publish user event ${event} for ${userId} (sync throw): ${msg}`)
+    }
   }
 
   emitToAdmin(event: string, data: unknown): void {
@@ -49,15 +65,20 @@ export class WebsocketGateway {
       this.logger.debug(`Firebase not configured; dropping admin event ${event}`)
       return
     }
-    db.collection('admin_events')
-      .add({
-        type: event,
-        data: data ?? null,
-        createdAt: this.firebase.serverTimestamp,
-      })
-      .catch((err: unknown) => {
-        const msg = err instanceof Error ? err.message : String(err)
-        this.logger.error(`Failed to publish admin event ${event}: ${msg}`)
-      })
+    try {
+      db.collection('admin_events')
+        .add({
+          type: event,
+          data: this.toPlain(data),
+          createdAt: this.firebase.serverTimestamp,
+        })
+        .catch((err: unknown) => {
+          const msg = err instanceof Error ? err.message : String(err)
+          this.logger.error(`Failed to publish admin event ${event}: ${msg}`)
+        })
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      this.logger.error(`Failed to publish admin event ${event} (sync throw): ${msg}`)
+    }
   }
 }

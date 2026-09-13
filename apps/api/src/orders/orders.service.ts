@@ -116,10 +116,18 @@ export class OrdersService {
     this.wsGateway.emitToAdmin('order:created', { order: populatedOrder })
     this.wsGateway.emitToAdmin('kitchen:new_order', { order: populatedOrder })
 
-    // Send confirmation email asynchronously via SMTP
+    // ─── FCM push to every admin/kitchen/manager device ──
+    // Runs in parallel with the email; failures are logged but never block the response.
+    this.notificationsService
+      .sendNewOrderNotificationToAdmins(order.orderNumber, order._id.toString(), order.total, order.orderType)
+      .catch((e) => this.logger.error(`Failed to push admin new-order notification: ${e?.message ?? e}`))
+
+    // Send confirmation email — awaited so the Vercel Lambda stays alive
+    // until SMTP completes. Failure is swallowed so a slow SMTP hop never
+    // takes down order creation.
     const targetEmail = customerEmail || 'wahab.waqar@nearearthadventures.com'
-    this.mailService
-      .sendOrderConfirmationEmail({
+    try {
+      await this.mailService.sendOrderConfirmationEmail({
         orderNumber: order.orderNumber,
         customerName,
         customerEmail: targetEmail,
@@ -137,7 +145,9 @@ export class OrdersService {
           lineTotal: i.lineTotal,
         })),
       })
-      .catch((e) => this.logger.error(`Failed to send order email: ${e.message}`))
+    } catch (e: any) {
+      this.logger.error(`Failed to send order email: ${e?.message ?? e}`)
+    }
 
     this.logger.log(`Order ${orderNumber} created for ${userId ? `user ${userId}` : `guest ${customerName}`}, emitted to admin`)
 
