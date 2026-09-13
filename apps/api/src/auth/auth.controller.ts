@@ -1,6 +1,9 @@
 import { Controller, Post, Get, Body, Query, UseGuards, Request, HttpException, HttpStatus } from '@nestjs/common'
 import { AuthService } from './auth.service'
 import { JwtAuthGuard } from '../common/jwt-auth.guard'
+import { RolesGuard } from '../common/roles.guard'
+import { Roles } from '../common/roles.decorator'
+import { Role } from '@kebab-biteri/types'
 import { FirebaseService } from '../firebase/firebase.service'
 
 @Controller('auth')
@@ -96,8 +99,12 @@ export class AuthController {
     return this.authService.adminLogin(body)
   }
 
-  // Admin registration — creates ADMIN role user
+  // Admin registration — only an existing ADMIN may provision another admin.
+  // Bootstrap the very first admin via `pnpm --filter @kebab-biteri/api seed`
+  // or by inserting a User with role: 'ADMIN' directly in the DB.
   @Post('admin/register')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   async adminRegister(@Body() body: { email: string; password: string; firstName: string; lastName: string }) {
     return this.authService.adminRegister(body)
   }
