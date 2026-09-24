@@ -1,0 +1,65 @@
+import { NestFactory } from '@nestjs/core'
+import { ValidationPipe, Logger } from '@nestjs/common'
+import { getConnectionToken } from '@nestjs/mongoose'
+import { Connection } from 'mongoose'
+import helmet from 'helmet'
+import * as dns from 'dns'
+import { AppModule } from './app.module'
+
+// Ensure public DNS resolvers are available for MongoDB Atlas SRV record lookups
+try {
+  dns.setServers(['8.8.8.8', '1.1.1.1', ...dns.getServers()])
+} catch {}
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule)
+
+  const allowedOrigins = [
+    process.env.FRONTEND_URL,
+    process.env.NEXT_PUBLIC_FRONTEND_URL,
+    'http://localhost:3000',
+    'http://localhost:3001',
+  ].filter(Boolean) as string[]
+
+  app.enableCors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+        callback(null, true)
+      } else {
+        callback(null, true)
+      }
+    },
+    credentials: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    allowedHeaders: 'Content-Type, Accept, Authorization, X-Requested-With',
+  })
+
+  app.setGlobalPrefix('api')
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      transform: true,
+      forbidNonWhitelisted: true,
+    }),
+  )
+  app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }))
+
+  // One-time cleanup: drop the legacy unique index on users.phone if present.
+  // Phone is no longer unique (households often share numbers).
+  try {
+    const conn = app.get<Connection>(getConnectionToken())
+    const indexes = await conn.collection('users').indexes()
+    const phoneIdx = indexes.find((i) => i.name === 'phone_1' && i.unique)
+    if (phoneIdx) {
+      await conn.collection('users').dropIndex('phone_1')
+      new Logger('Startup').log('Dropped legacy unique index users.phone_1')
+    }
+  } catch (e: any) {
+    new Logger('Startup').warn(`Index cleanup skipped: ${e.message}`)
+  }
+
+  const port = process.env.PORT ?? 3001
+  await app.listen(port)
+  console.log(`🚀 Kebab Biteri API running on http://localhost:${port}`)
+}
+bootstrap()
